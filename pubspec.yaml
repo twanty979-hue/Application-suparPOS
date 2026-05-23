@@ -1,0 +1,44 @@
+name: foodscanapp
+description: "FoodScan POS Android Application"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.10.8 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- UI & Icons ---
+  cupertino_icons: ^1.0.8
+
+  # --- Backend & API ---
+  supabase_flutter: ^2.12.0
+  http: ^1.6.0
+  flutter_dotenv: ^5.1.0 # สำหรับอ่านค่า IP 192.168.31.81 จาก .env
+
+  # --- Offline Database (SQLite) ---
+  sqflite: ^2.3.0
+  path: ^1.9.0
+
+  # --- Hardware & Utilities ---
+  blue_thermal_printer: ^1.2.3 # สำหรับพิมพ์ใบเสร็จ
+  shared_preferences: ^2.5.4 # สำหรับเก็บค่า Setting เล็กๆ น้อยๆ
+  mobile_scanner: ^5.1.1 # สำหรับใช้กล้องมือถือสแกนบาร์โค้ดสินค้า
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0 # อัปเดตให้เป็นเวอร์ชันมาตรฐานปัจจุบัน
+
+flutter:
+  uses-material-design: true
+
+  # ✅ ลงทะเบียนไฟล์ .env ให้แอปมองเห็น
+  assets:
+    - .env
+    # ถ้านายมีรูปภาพโลโก้ในโฟลเดอร์ assets/images ให้เปิดใช้งานตรงนี้ด้วยครับ
+    # - assets/images/logo.png
