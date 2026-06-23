@@ -7,7 +7,8 @@ class CashModal {
     return NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 2).format(amount);
   }
 
-  static Future<bool?> show(BuildContext context, double payableAmount) {
+  // 🚨 แก้ประเภท Return Type จาก bool? เป็น dynamic เพื่อรองรับการคืนค่าตัวเลข (double) หรือ false
+  static Future<dynamic> show(BuildContext context, double payableAmount) {
     double receivedAmount = 0;
 
     Widget buildNumpadBtn(String label, VoidCallback onTap, {Color? color, Color? textColor, IconData? icon}) {
@@ -28,7 +29,7 @@ class CashModal {
       );
     }
 
-    return showDialog<bool>(
+    return showDialog<dynamic>( // 👈 แก้รับค่าเป็น dynamic
       context: context,
       barrierColor: AppColors.slate900.withOpacity(0.6),
       builder: (BuildContext context) {
@@ -150,7 +151,8 @@ class CashModal {
                             children: [
                               Expanded(
                                 child: ElevatedButton(
-                                  onPressed: () => setModalState(() => receivedAmount = payableAmount),
+                                  // 🚀 แก้ไข 1: กด "จ่ายพอดี" ให้ปิด Modal และส่งค่ายอดชำระกลับไปเลย
+                                  onPressed: () => Navigator.pop(context, payableAmount),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.blue50, foregroundColor: AppColors.blue600, elevation: 0, padding: const EdgeInsets.symmetric(vertical: 16),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.blue50)),
@@ -161,7 +163,8 @@ class CashModal {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: ElevatedButton(
-                                  onPressed: canPay ? () => Navigator.pop(context, true) : null,
+                                  // 🚀 แก้ไข 2: กด "ยืนยัน" ให้ส่ง receivedAmount เป็นตัวเลขกลับไป
+                                  onPressed: canPay ? () => Navigator.pop(context, receivedAmount) : null,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.emerald500, foregroundColor: Colors.white, elevation: 0, padding: const EdgeInsets.symmetric(vertical: 16),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -172,7 +175,10 @@ class CashModal {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("ยกเลิก", style: TextStyle(color: AppColors.slate400, fontWeight: FontWeight.bold)))
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false), 
+                            child: const Text("ยกเลิก", style: TextStyle(color: AppColors.slate400, fontWeight: FontWeight.bold))
+                          )
                         ],
                       ),
                     )

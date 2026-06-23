@@ -18,22 +18,38 @@ class MobileBottomCart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      // คงความเตี้ยไว้ด้วย Padding ที่น้อยลง
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12), 
       decoration: BoxDecoration(
         color: Colors.white, 
+        // นำขอบเส้นตรงด้านบนกลับมา และเอาความโค้งออกให้เป็นสี่เหลี่ยมตามเดิม
         border: const Border(top: BorderSide(color: AppColors.slate100)), 
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, -4))]
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1), 
+            blurRadius: 20, 
+            offset: const Offset(0, -4)
+          )
+        ]
       ),
       child: SafeArea(
+        top: false,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            // Padding ด้านในปุ่มยังคงบางลงครึ่งนึงเหมือนที่ปรับไว้
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.slate800, 
-              borderRadius: BorderRadius.circular(16), 
-              boxShadow: [BoxShadow(color: AppColors.slate800.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))]
+              borderRadius: BorderRadius.circular(12), 
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.slate800.withOpacity(0.4), 
+                  blurRadius: 8, 
+                  offset: const Offset(0, 4)
+                )
+              ]
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -41,20 +57,35 @@ class MobileBottomCart extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      width: 28, height: 28, 
-                      decoration: const BoxDecoration(color: AppColors.orange500, shape: BoxShape.circle), 
+                      width: 24, height: 24, 
+                      decoration: const BoxDecoration(
+                        color: AppColors.orange500, 
+                        shape: BoxShape.circle
+                      ), 
                       alignment: Alignment.center, 
-                      child: Text("$totalItems", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))
+                      child: Text(
+                        "$totalItems", 
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)
+                      )
                     ),
                     const SizedBox(width: 8),
-                    const Text("ดูตะกร้า", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    const Text(
+                      "ดูตะกร้า", 
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)
+                    ),
                   ],
                 ),
                 Row(
                   children: [
-                    const Text("รวม", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    const Text(
+                      "รวม", 
+                      style: TextStyle(color: Colors.white70, fontSize: 12)
+                    ),
                     const SizedBox(width: 8),
-                    Text(formatCurrency(payableAmount), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+                    Text(
+                      formatCurrency(payableAmount), 
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)
+                    ),
                   ],
                 )
               ],

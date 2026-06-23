@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "322009039415",
+    "firebase_url": "https://ecommer-e58e8-default-rtdb.firebaseio.com",
+    "project_id": "ecommer-e58e8",
+    "storage_bucket": "ecommer-e58e8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:322009039415:android:b450cde17c3c6a282d75b2",
+        "android_client_info": {
+          "package_name": "com.suparpos.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "322009039415-so3ra8s2gk6gqtafa8re22o70kunsts2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.suparpos.app",
+            "certificate_hash": "29dcbb94a8108857b9b5012cc534ef331e0ada8b"
+          }
+        },
+        {
+          "client_id": "322009039415-0hq9ct317i7g6n03j929l41l219do4a6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCv3vVikjwPi0ciUOrXMcX2DNISdo2DbMU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "322009039415-0hq9ct317i7g6n03j929l41l219do4a6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

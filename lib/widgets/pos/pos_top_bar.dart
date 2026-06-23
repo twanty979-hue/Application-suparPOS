@@ -1,148 +1,419 @@
+// lib/widgets/pos/pos_top_bar.dart
+
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 
 class PosTopBar extends StatelessWidget {
   final String activeTab;
   final int unpaidCount;
-  final bool autoKitchen;
-  final ValueChanged<String> onTabChanged;
-  final VoidCallback onKitchenToggled;
+  final VoidCallback onMenuPressed;
+  final Function(String) onTabChanged;
+  final String quotaLabel;
+  final bool isQuotaLocked;
+  final VoidCallback onQrButtonPressed;
+  final String planType;
 
   const PosTopBar({
     super.key,
     required this.activeTab,
     required this.unpaidCount,
-    required this.autoKitchen,
+    required this.onMenuPressed,
     required this.onTabChanged,
-    required this.onKitchenToggled,
+    required this.quotaLabel,
+    required this.isQuotaLocked,
+    required this.onQrButtonPressed,
+    this.planType = 'free',
   });
 
-  static const double _commonHeight = 44.0;
-  static const double _commonRadius = 12.0;
-
-  Widget _buildTabButton(String tab, String label, IconData icon, {int? badge}) {
-    bool isSelected = activeTab == tab;
-    Color activeColor = tab == 'tables' ? AppColors.slate800 : AppColors.orange500;
+  Widget _modeButton({
+    required String tab,
+    required String label,
+    required IconData icon,
+    int? badge,
+  }) {
+    final isSelected = activeTab == tab;
+    final activeColor = tab == 'pos' ? AppColors.orange500 : AppColors.slate800;
 
     return Expanded(
       child: GestureDetector(
         onTap: () => onTabChanged(tab),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          // 🔥 จุดสำคัญที่ 1: เอา margin ออก สีจะได้ยืดสุดขอบ
-          decoration: BoxDecoration(
-            color: isSelected ? activeColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(_commonRadius - 4), // โค้งรับกับขอบนอกพอดี
-            boxShadow: isSelected 
-                ? [BoxShadow(color: activeColor.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))] 
-                : [],
-          ),
-          child: Stack(
+        child: AnimatedScale(
+          scale: isSelected ? 1.02 : 1.0,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
             alignment: Alignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, color: isSelected ? Colors.white : AppColors.slate500, size: 16),
-                  const SizedBox(width: 6),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.slate600, 
-                      fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold, 
-                      fontSize: 13,
+            decoration: BoxDecoration(
+              color: isSelected ? activeColor : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: activeColor.withOpacity(0.18),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? Colors.white : AppColors.slate400,
+                  size: 20,
+                ),
+                if (label.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : AppColors.slate400,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        fontFamily: 'Kanit',
+                      ),
                     ),
                   ),
-                  if (badge != null && badge > 0) const SizedBox(width: 22),
                 ],
-              ),
-              if (badge != null && badge > 0)
-                Positioned(
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                if (badge != null && badge > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.white.withOpacity(0.25) : AppColors.orange500,
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.orange500,
+                      borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      "$badge",
-                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
+                      '$badge',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        height: 1,
+                      ),
                     ),
                   ),
-                ),
-            ],
+                ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildIconButton(IconData icon, VoidCallback onTap, {bool isActive = false, Color? activeColor, Color? activeBg, Color? iconColor}) {
-    return InkWell(
+  Widget _squareButton({
+    required double size,
+    required double radius,
+    required Color color,
+    required Color borderColor,
+    required Color shadowColor,
+    required IconData icon,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(_commonRadius),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: _commonHeight,
-        height: _commonHeight,
+      child: Container(
+        width: size,
         decoration: BoxDecoration(
-          color: isActive ? (activeBg ?? AppColors.emerald50) : Colors.white,
-          borderRadius: BorderRadius.circular(_commonRadius),
-          border: Border.all(
-            color: isActive ? (activeColor?.withOpacity(0.3) ?? AppColors.slate200) : AppColors.slate200, 
-            width: 1.2
-          ),
+          color: color,
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Icon(
-          icon, 
-          color: isActive ? (activeColor ?? AppColors.emerald500) : (iconColor ?? AppColors.slate600), 
-          size: 18
-        ),
+        child: Icon(icon, color: iconColor, size: 24),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 768;
+    final isCompact = MediaQuery.of(context).size.width < 390;
+    final barHeight = isDesktop ? 72.0 : 56.0;
+    final radius = isDesktop ? 20.0 : 12.0;
+    final gap = isDesktop ? 12.0 : 8.0;
+
     return SizedBox(
-      height: _commonHeight, 
+      height: barHeight,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch, 
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 🔥 รางเมนู (Track)
+          _squareButton(
+            size: barHeight,
+            radius: radius,
+            color: Colors.white,
+            borderColor: AppColors.slate100,
+            shadowColor: Colors.black.withOpacity(0.04),
+            icon: Icons.menu_rounded,
+            iconColor: AppColors.slate500,
+            onTap: onMenuPressed,
+          ),
+          SizedBox(width: gap),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(3), // 🔥 จุดสำคัญที่ 2: ให้รางเป็นตัวบีบระยะขอบนอกแทน
               decoration: BoxDecoration(
-                color: AppColors.slate100.withOpacity(0.6), // สีพื้นหลังรางเป็นสีเทาอ่อนๆ
-                borderRadius: BorderRadius.circular(_commonRadius),
-                border: Border.all(color: AppColors.slate200, width: 1.2),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(radius),
+                border: Border.all(color: AppColors.slate100),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
+              padding: EdgeInsets.all(isDesktop ? 6 : 4),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch, // 🔥 จุดสำคัญที่ 3: สั่งให้ปุ่มสีๆ ยืดความสูงเต็มราง
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildTabButton('tables', 'โต๊ะ', Icons.receipt_long_rounded, badge: unpaidCount),
-                  _buildTabButton('pos', 'POS', Icons.grid_view_rounded),
+                  _modeButton(
+                    tab: 'tables',
+                    label: isDesktop
+                        ? 'โต๊ะ & รายการ'
+                        : isCompact
+                        ? ''
+                        : 'โต๊ะ',
+                    icon: Icons.receipt_long_rounded,
+                    badge: unpaidCount,
+                  ),
+                  _modeButton(
+                    tab: 'pos',
+                    label: 'POS',
+                    icon: Icons.grid_view_rounded,
+                  ),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          _buildIconButton(
-            Icons.bolt_rounded, 
-            onKitchenToggled, 
-            isActive: autoKitchen, 
-            activeColor: AppColors.emerald500, 
-            activeBg: AppColors.emerald50
-          ),
-          const SizedBox(width: 8),
-          _buildIconButton(
-            Icons.qr_code_scanner_rounded, 
-            () {}, 
-            iconColor: AppColors.slate600
+          SizedBox(width: gap),
+          AnimatedQuotaButton(
+            planType: planType,
+            quotaLabel: quotaLabel,
+            isLocked: isQuotaLocked,
+            onTap: onQrButtonPressed,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class AnimatedQuotaButton extends StatefulWidget {
+  final String planType;
+  final String quotaLabel;
+  final bool isLocked;
+  final VoidCallback onTap;
+
+  const AnimatedQuotaButton({
+    super.key,
+    required this.planType,
+    required this.quotaLabel,
+    required this.isLocked,
+    required this.onTap,
+  });
+
+  @override
+  State<AnimatedQuotaButton> createState() => _AnimatedQuotaButtonState();
+}
+
+class _AnimatedQuotaButtonState extends State<AnimatedQuotaButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // 🌟 เปลี่ยนมาใช้ Animation หายใจเข้าออกแบบนุ่มนวล
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500), // จังหวะหายใจกำลังดี
+    )..repeat(reverse: true); // ให้มันค่อยๆ สว่าง แล้วค่อยๆ จางสลับกัน
+
+    // สร้างค่าแสงเงาตั้งแต่จางสุด (0.3) ไปถึงสว่างสุด (0.8)
+    _pulseAnimation = Tween<double>(begin: 0.2, end: 0.7).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 768;
+    final size = isDesktop ? 72.0 : 56.0;
+    final radius = isDesktop ? 20.0 : 12.0;
+    
+    final normalizedPlan = widget.planType.toLowerCase().trim();
+
+    // สกัดอิโมจิและอักขระพิเศษทิ้ง เหลือแค่ตัวอักษรภาษาไทย, อังกฤษ, ตัวเลข และ / เท่านั้น!
+    final String cleanLabel = widget.quotaLabel
+        .replaceAll(RegExp(r'[^\x00-\x7F\u0E00-\u0E7F]+'), '')
+        .trim();
+
+    // 1. ดักสัญญาล็อกลอจิกสำหรับค่าย FREE
+    if (normalizedPlan == 'free' || normalizedPlan == 'unknown' || normalizedPlan.isEmpty) {
+      return GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          width: size,
+          decoration: BoxDecoration(
+            color: widget.isLocked ? AppColors.rose50 : Colors.white,
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(
+              color: widget.isLocked
+                  ? const Color(0xFFFCA5A5)
+                  : AppColors.slate100,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                widget.isLocked
+                    ? Icons.lock_rounded
+                    : Icons.qr_code_scanner_rounded,
+                color: widget.isLocked ? AppColors.rose500 : AppColors.slate500,
+                size: isDesktop ? 22 : 18,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                cleanLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: widget.isLocked
+                      ? AppColors.rose500
+                      : AppColors.slate400,
+                  fontSize: isDesktop ? 10 : 9,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Kanit',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 2. แมปสีตามเกรดพรีเมียม (Basic, Pro, Ultimate)
+    final Color iconColor;
+    final Color insideBgColor;
+    final IconData displayIcon;
+    final bool isPulsing;
+
+    if (normalizedPlan == 'ultimate') {
+      // 🌟 ULTIMATE: ดำทอง หรูหรา (แสงทองวูบวาบ)
+      iconColor = const Color(0xFFD4AF37); // สีทอง Premium
+      insideBgColor = const Color(0xFF111827); // พื้นหลังดำเข้ม
+      displayIcon = Icons.military_tech_rounded;
+      isPulsing = true;
+    } else if (normalizedPlan == 'pro') {
+      // 🌟 PRO: นีออนม่วงสว่าง (แสงม่วงวูบวาบ)
+      iconColor = const Color(0xFF9333EA);
+      insideBgColor = Colors.white;
+      displayIcon = Icons.star_rounded;
+      isPulsing = true;
+    } else {
+      // 🌟 BASIC: ขาวสีกรมท่า คลีนๆ (ไม่วูบวาบ)
+      iconColor = AppColors.blue600;
+      insideBgColor = Colors.white;
+      displayIcon = Icons.storefront_rounded;
+      isPulsing = false;
+    }
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: AnimatedBuilder(
+        animation: _pulseAnimation,
+        builder: (context, child) {
+          return Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: insideBgColor,
+              borderRadius: BorderRadius.circular(radius),
+              // 🌟 จุดเปลี่ยน: ใช้ BoxShadow แทนการสร้างกล่องสี่เหลี่ยมด้านล่าง
+              // ถ้าระดับ Pro/Ultimate ให้แสงขอบฟุ้งกระจายตามจังหวะหายใจ
+              boxShadow: [
+                BoxShadow(
+                  color: isPulsing 
+                    ? iconColor.withOpacity(_pulseAnimation.value) // แสงวูบวาบ
+                    : iconColor.withOpacity(0.15), // Basic แสงนิ่งๆ อ่อนๆ
+                  blurRadius: isPulsing ? 18 : 12,
+                  spreadRadius: isPulsing ? 2 : 0,
+                  offset: const Offset(0, 4),
+                ),
+                // ใส่เงาพื้นฐานรองไว้อีกชั้นให้กล่องดูลอยมีมิติ
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+              // ใส่เส้นขอบบางๆ สีเดียวกับไอคอนให้ดูคมขึ้น
+              border: Border.all(
+                color: isPulsing ? iconColor.withOpacity(0.3) : AppColors.slate200,
+                width: 1.5,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  displayIcon,
+                  color: iconColor,
+                  size: isDesktop ? 24 : 20, // ปรับไอคอนให้ใหญ่ขึ้นนิดนึง
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  cleanLabel, 
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: iconColor,
+                    fontSize: isDesktop ? 9.5 : 8.5,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Kanit',
+                    letterSpacing: 0.5, // เพิ่มช่องไฟให้ดูหรูขึ้น
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

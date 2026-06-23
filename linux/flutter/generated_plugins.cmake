@@ -3,8 +3,10 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  gtk
-  url_launcher_linux
+  audioplayers_linux
+  charset_converter
+  file_selector_linux
+  flutter_secure_storage_linux
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
