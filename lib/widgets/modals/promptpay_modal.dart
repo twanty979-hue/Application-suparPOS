@@ -1,5 +1,6 @@
 // lib/widgets/modals/promptpay_modal.dart
 import 'package:flutter/material.dart';
+
 import '../../theme/app_colors.dart';
 
 class PromptPayModal {
@@ -9,189 +10,288 @@ class PromptPayModal {
     required String promptPayNum,
     required String Function(double) formatCurrency,
     Future<void> Function()? onPrintReceiptWithQr,
-    required VoidCallback
-    onConfirm, // ฟังก์ชันสำหรับรันตอนกดยืนยัน (เช่น บันทึกลง DB)
+    required VoidCallback onConfirm,
   }) async {
-    // ⚠️ ดักเช็คถ้าหากร้านค้ายังไม่ได้กรอกเบอร์พร้อมเพย์ในระบบ
     if (promptPayNum.isEmpty || promptPayNum == 'ยังไม่ได้ตั้งค่า') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            '⚠️ ไม่สามารถสร้าง QR ได้เนื่องจากยังไม่ได้ตั้งค่าเบอร์พร้อมเพย์',
-          ),
+          content: Text('ยังไม่ได้ตั้งค่าเบอร์พร้อมเพย์'),
           backgroundColor: AppColors.rose500,
         ),
       );
       return;
     }
 
-    // 🎯 เจนลิงก์โดยดึงเบอร์พร้อมเพย์รวมเข้ากับยอดเงิน
-    String generatedQrUrl =
-        "https://promptpay.io/$promptPayNum/$payableAmount.png";
+    final generatedQrUrl =
+        'https://promptpay.io/$promptPayNum/$payableAmount.png';
 
     return showDialog(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.72),
       builder: (context) {
         var isPrinting = false;
 
         return StatefulBuilder(
-          builder: (context, setModalState) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-            ),
-            title: const Row(
-              children: [
-                Icon(Icons.qr_code_2, color: AppColors.blue600, size: 28),
-                SizedBox(width: 8),
-                Text('ชำระเงิน', style: TextStyle(fontWeight: FontWeight.w900)),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  formatCurrency(payableAmount),
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.slate800,
-                  ),
+          builder: (context, setModalState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 390),
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.28),
+                      blurRadius: 34,
+                      offset: const Offset(0, 18),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'พร้อมเพย์: $promptPayNum',
-                  style: const TextStyle(
-                    color: AppColors.slate500,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // 🖼️ แสดงภาพคิวอาร์โค้ด
-                Container(
-                  width: 220,
-                  height: 220,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: AppColors.slate100),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Image.network(
-                    generatedQrUrl,
-                    key: ValueKey(payableAmount),
-                    fit: BoxFit.contain,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.blue600,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(22, 20, 14, 22),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF0B1730), Color(0xFF1D4ED8)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.broken_image,
-                              color: AppColors.slate300,
-                              size: 40,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'โหลด QR Code ล้มเหลว',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.slate400,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
                               ),
                             ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'ยอดเงินจะฝังอยู่ใน QR ลูกค้าสแกนแล้วจ่ายได้ทันที',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.slate400,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: isPrinting ? null : () => Navigator.pop(context),
-                child: const Text(
-                  'ยกเลิก',
-                  style: TextStyle(
-                    color: AppColors.slate500,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              if (onPrintReceiptWithQr != null)
-                OutlinedButton.icon(
-                  onPressed: isPrinting
-                      ? null
-                      : () async {
-                          setModalState(() => isPrinting = true);
-                          await onPrintReceiptWithQr();
-                          if (context.mounted) {
-                            setModalState(() => isPrinting = false);
-                          }
-                        },
-                  icon: isPrinting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.print_rounded, size: 18),
-                  label: Text(isPrinting ? 'กำลังพิมพ์...' : 'พิมพ์ใบพร้อม QR'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.blue600,
-                    side: const BorderSide(color: AppColors.blue600),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                            child: const Icon(
+                              Icons.qr_code_2_rounded,
+                              color: Colors.white,
+                              size: 27,
+                            ),
+                          ),
+                          const SizedBox(width: 13),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'PromptPay',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 21,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                SizedBox(height: 3),
+                                Text(
+                                  'สแกนชำระเงินตามยอด',
+                                  style: TextStyle(
+                                    color: Color(0xCCFFFFFF),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: isPrinting
+                                ? null
+                                : () => Navigator.pop(context),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ElevatedButton(
-                onPressed: isPrinting
-                    ? null
-                    : () {
-                        Navigator.pop(context);
-                        onConfirm(); // 💥 เรียกฟังก์ชันที่ส่งเข้ามา (คือ _processPayment)
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.blue600,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'ยืนยันได้รับเงินแล้ว',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            formatCurrency(payableAmount),
+                            style: const TextStyle(
+                              color: AppColors.slate900,
+                              fontSize: 34,
+                              fontWeight: FontWeight.w900,
+                              height: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              'PromptPay: $promptPayNum',
+                              style: const TextStyle(
+                                color: AppColors.slate600,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Container(
+                            width: 238,
+                            height: 238,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(26),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF1D4ED8,
+                                  ).withValues(alpha: 0.1),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 12),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Image.network(
+                              generatedQrUrl,
+                              key: ValueKey(payableAmount),
+                              fit: BoxFit.contain,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.blue600,
+                                      ),
+                                    );
+                                  },
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Center(
+                                  child: Text(
+                                    'โหลด QR ไม่สำเร็จ',
+                                    style: TextStyle(
+                                      color: AppColors.slate400,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'หลังลูกค้าชำระแล้วกดยืนยันเพื่อบันทึกยอด',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.slate400,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          if (onPrintReceiptWithQr != null) ...[
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: isPrinting
+                                    ? null
+                                    : () async {
+                                        setModalState(() => isPrinting = true);
+                                        await onPrintReceiptWithQr();
+                                        if (context.mounted) {
+                                          setModalState(
+                                            () => isPrinting = false,
+                                          );
+                                        }
+                                      },
+                                icon: isPrinting
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.print_rounded, size: 18),
+                                label: Text(
+                                  isPrinting
+                                      ? 'กำลังพิมพ์...'
+                                      : 'พิมพ์ใบพร้อม QR',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: isPrinting
+                                      ? null
+                                      : () => Navigator.pop(context),
+                                  child: const Text('ยกเลิก'),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                flex: 2,
+                                child: ElevatedButton(
+                                  onPressed: isPrinting
+                                      ? null
+                                      : () {
+                                          Navigator.pop(context);
+                                          onConfirm();
+                                        },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.blue600,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'ยืนยันรับเงินแล้ว',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

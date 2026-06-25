@@ -2,13 +2,13 @@
 
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:convert';
 
 import 'package:blue_thermal_printer/blue_thermal_printer.dart' as bt;
 import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -83,6 +83,7 @@ class PrinterService {
     try {
       receiptBytes = await _generateOrderReceipt(
         data,
+        brandId: brandId,
         copies: settings.copies,
         isKitchenTicket: _isKitchenTicket(data),
         isReprint: isReprint,
@@ -272,6 +273,7 @@ class PrinterService {
 
   static Future<List<int>> _generateOrderReceipt(
     Map<String, dynamic> data, {
+    required String brandId,
     required int copies,
     required bool isKitchenTicket,
     bool isReprint = false,
@@ -283,6 +285,7 @@ class PrinterService {
     for (var copy = 1; copy <= copies; copy++) {
       final image = await _buildOrderImage(
         data,
+        brandId: brandId,
         isKitchenTicket: isKitchenTicket,
         copyIndex: copies > 1 ? copy : null,
         copyCount: copies,
@@ -311,12 +314,14 @@ class PrinterService {
 
   static Future<img.Image> _buildOrderImage(
     Map<String, dynamic> data, {
+    required String brandId,
     required bool isKitchenTicket,
     required int? copyIndex,
     required int copyCount,
     bool isReprint = false,
-  }) {
+  }) async {
     final lines = <_TicketLine>[];
+    final logoImage = await _loadReceiptLogo(brandId, data, isKitchenTicket);
     final brandName = _firstText(data, const [
       'brand_name',
       'brandName',
@@ -359,6 +364,10 @@ class PrinterService {
           bold: false,
         ),
       );
+    }
+
+    if (logoImage != null) {
+      lines.add(_TicketLine.image(logoImage));
     }
 
     if (isReprint) {
@@ -480,6 +489,60 @@ class PrinterService {
     return _renderLines(lines);
   }
 
+  static Future<ui.Image?> _loadReceiptLogo(
+    String brandId,
+    Map<String, dynamic> data,
+    bool isKitchenTicket,
+  ) async {
+    if (isKitchenTicket) return null;
+
+    final prefs = await SharedPreferences.getInstance();
+    final showLogo =
+        data['show_receipt_logo'] == true ||
+        data['showReceiptLogo'] == true ||
+        (brandId.isNotEmpty &&
+            (prefs.getBool('show_receipt_logo_$brandId') ?? false));
+    if (!showLogo) return null;
+
+    Uint8List? logoBytes;
+    final explicitPath = _firstText(data, const [
+      'receipt_logo_path',
+      'receiptLogoPath',
+      'logo_path',
+      'logoPath',
+    ], '');
+    final savedPath = brandId.isEmpty
+        ? ''
+        : prefs.getString('store_logo_path_$brandId') ?? '';
+    final logoPath = explicitPath.isNotEmpty ? explicitPath : savedPath;
+
+    if (logoPath.isNotEmpty) {
+      try {
+        final file = File(logoPath);
+        if (await file.exists()) {
+          logoBytes = await file.readAsBytes();
+        }
+      } catch (_) {}
+    }
+
+    logoBytes ??= (await rootBundle.load(
+      'lib/assets/app_logo.png',
+    )).buffer.asUint8List();
+
+    final decoded = img.decodeImage(logoBytes);
+    if (decoded == null) return null;
+
+    final resized = img.copyResize(
+      decoded,
+      width: 108,
+      interpolation: img.Interpolation.average,
+    );
+    final pngBytes = Uint8List.fromList(img.encodePng(resized));
+    final codec = await ui.instantiateImageCodec(pngBytes);
+    final frame = await codec.getNextFrame();
+    return frame.image;
+  }
+
   static Future<img.Image> _buildQrImage(String orderUrl) async {
     const baseWidth = _receiptWidthDots;
     const scale = 5.0;
@@ -590,6 +653,27 @@ class PrinterService {
           fontSize: 22,
           bold: false,
           align: TextAlign.center,
+        );
+      } else if (line.image != null) {
+        final source = line.image!;
+        final imageHeight = line.height * scale;
+        final imageWidth = imageHeight * source.width / source.height;
+        final dest = Rect.fromLTWH(
+          (width - imageWidth) / 2,
+          y * scale,
+          imageWidth,
+          imageHeight,
+        );
+        canvas.drawImageRect(
+          source,
+          Rect.fromLTWH(
+            0,
+            0,
+            source.width.toDouble(),
+            source.height.toDouble(),
+          ),
+          dest,
+          Paint()..filterQuality = FilterQuality.medium,
         );
       } else if (line.qrData != null) {
         final qrSize = line.height - 20;
@@ -742,20 +826,66 @@ class PrinterService {
   }
 
   static img.Image _thresholdBlackWhite(img.Image image) {
-    for (var y = 0; y < image.height; y++) {
-      for (var x = 0; x < image.width; x++) {
+    final width = image.width;
+    final height = image.height;
+
+    // Create a 2D array of grayscales to perform error diffusion
+    final grays = List.generate(
+      height,
+      (y) => List.generate(width, (x) {
         final colorValue = image.getPixel(x, y);
         final r = img.getRed(colorValue);
         final g = img.getGreen(colorValue);
         final b = img.getBlue(colorValue);
-        final luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
+        final a = img.getAlpha(colorValue);
+
+        // If mostly transparent, treat as white paper background
+        if (a < 128) {
+          return 255.0;
+        }
+
+        // Standard luminance formula
+        return (0.299 * r) + (0.587 * g) + (0.114 * b);
+      }),
+    );
+
+    // Floyd-Steinberg Dithering Algorithm
+    for (var y = 0; y < height; y++) {
+      for (var x = 0; x < width; x++) {
+        final oldVal = grays[y][x];
+        // Using 180 as threshold (balanced for text and dithering logo)
+        final newVal = oldVal < 180 ? 0.0 : 255.0;
+        final error = oldVal - newVal;
+
+        grays[y][x] = newVal;
+
+        if (x + 1 < width) {
+          grays[y][x + 1] += error * 7 / 16;
+        }
+        if (y + 1 < height) {
+          if (x - 1 >= 0) {
+            grays[y + 1][x - 1] += error * 3 / 16;
+          }
+          grays[y + 1][x] += error * 5 / 16;
+          if (x + 1 < width) {
+            grays[y + 1][x + 1] += error * 1 / 16;
+          }
+        }
+      }
+    }
+
+    // Write the dithered result back into the image pixels
+    for (var y = 0; y < height; y++) {
+      for (var x = 0; x < width; x++) {
+        final val = grays[y][x].round().clamp(0, 255);
         image.setPixel(
           x,
           y,
-          luminance < 190 ? img.getColor(0, 0, 0) : img.getColor(255, 255, 255),
+          val < 128 ? img.getColor(0, 0, 0) : img.getColor(255, 255, 255),
         );
       }
     }
+
     return image;
   }
 
@@ -1142,6 +1272,7 @@ class _TicketLine {
   }) : left = null,
        right = null,
        qrData = null,
+       image = null,
        indent = 0,
        bottomGap = 0,
        height = fontSize + 12,
@@ -1152,6 +1283,7 @@ class _TicketLine {
     : center = null,
       right = null,
       qrData = null,
+      image = null,
       bold = false,
       topGap = 0,
       bottomGap = 0,
@@ -1167,6 +1299,7 @@ class _TicketLine {
     this.bold = false,
   }) : center = null,
        qrData = null,
+       image = null,
        topGap = 0,
        bottomGap = 0,
        height = fontSize + 12,
@@ -1178,6 +1311,7 @@ class _TicketLine {
       left = null,
       right = null,
       qrData = null,
+      image = null,
       indent = 0,
       fontSize = 24,
       bold = false,
@@ -1192,6 +1326,7 @@ class _TicketLine {
       left = null,
       right = null,
       qrData = null,
+      image = null,
       indent = 0,
       fontSize = 24,
       bold = false,
@@ -1204,6 +1339,7 @@ class _TicketLine {
     : center = null,
       left = null,
       right = null,
+      image = null,
       indent = 0,
       fontSize = 24,
       bold = false,
@@ -1213,10 +1349,25 @@ class _TicketLine {
       isSeparator = false,
       isBlank = false;
 
+  const _TicketLine.image(this.image)
+    : center = null,
+      left = null,
+      right = null,
+      qrData = null,
+      indent = 0,
+      fontSize = 24,
+      bold = false,
+      topGap = 0,
+      bottomGap = 8,
+      height = 82,
+      isSeparator = false,
+      isBlank = false;
+
   final String? center;
   final String? left;
   final String? right;
   final String? qrData;
+  final ui.Image? image;
   final double indent;
   final double fontSize;
   final bool bold;

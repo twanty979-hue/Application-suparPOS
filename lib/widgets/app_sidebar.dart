@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../login.dart';
 import '../api_service.dart';
 import '../screens/dashboard_screen.dart';
+import '../screens/db_inspector_screen.dart';
 import '../screens/inventory_screen.dart';
 import '../screens/kitchen_screen.dart';
 import '../screens/marketplace_screen.dart';
@@ -175,6 +176,13 @@ class _AppSidebarState extends State<AppSidebar>
                     icon: Icons.inventory_2_outlined,
                     title: 'ระบบคลังสินค้า',
                     page: const InventoryScreen(),
+                  ),
+                  _buildMenuItem(
+                    context,
+                    menuKey: 'db_inspector',
+                    icon: Icons.storage_rounded,
+                    title: 'DB Inspector',
+                    page: const DbInspectorScreen(),
                   ),
                   if (_canManageStore) ...[
                     _buildSectionDivider('จัดการร้าน'),
@@ -662,6 +670,7 @@ class _AppSidebarState extends State<AppSidebar>
       );
       return;
     }
+    if (!mounted || !context.mounted) return;
     final navigator = Navigator.of(context);
     navigator.pop();
 

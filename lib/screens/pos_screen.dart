@@ -66,7 +66,7 @@ class _PosScreenState extends State<PosScreen>
   String _activeTab = 'tables';
   String _selectedCategory = 'ALL';
   String _paymentMethod = 'cash';
-  bool _isLoadingAPI = true;
+  bool _isLoadingAPI = false;
   bool _showProductImages = true;
   bool _showBarcodeProducts = true;
 
@@ -75,6 +75,8 @@ class _PosScreenState extends State<PosScreen>
   List<Map<String, dynamic>> _tables = [];
   List<Map<String, dynamic>> _discounts = [];
   List<Map<String, dynamic>> _cart = [];
+  final List<Map<String, dynamic>> _cancelledCartItems = [];
+  String? _walkInDraftOrderId;
   List<Map<String, dynamic>> _unpaidOrders = [];
 
   int _orderUsage = 0;
@@ -103,6 +105,7 @@ class _PosScreenState extends State<PosScreen>
         prefs.getBool('pos_show_barcode_products_${widget.brandId}') ?? true;
 
     await _loadCachedPosData();
+    await _restoreWalkInDraftOrder();
     _accessToken = await StorageService.getToken();
 
     await Future.wait([
@@ -152,11 +155,7 @@ class _PosScreenState extends State<PosScreen>
           print(
             "🔄 [SYNC] ข้อมูลมีการเปลี่ยนแปลง สั่งรีเฟรชหน้า POS อัตโนมัติ!",
           );
-          if (type == 'NEW_ORDER') {
-            await _refreshAndMaybePrintIncomingOrder(message.data);
-          } else {
-            _fetchPosData();
-          }
+          _fetchPosData();
           _fetchOrderQuota();
         }
 
@@ -179,7 +178,11 @@ class _PosScreenState extends State<PosScreen>
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_accessToken',
         },
-        body: jsonEncode({'fcm_token': token}),
+        body: jsonEncode({
+          'fcm_token': token,
+          'platform': _devicePlatform(),
+          'device_label': _deviceLabel(),
+        }),
       );
       if (response.statusCode == 200) {
         print("☁️ [FCM] นำ Token ไปผูกกับพนักงานใน Database สำเร็จ!");
@@ -187,6 +190,20 @@ class _PosScreenState extends State<PosScreen>
     } catch (e) {
       print("❌ [FCM Error] ส่ง Token ขึ้น Server ล้มเหลว: $e");
     }
+  }
+
+  String _devicePlatform() {
+    if (Platform.isAndroid) return 'android';
+    if (Platform.isIOS) return 'ios';
+    if (Platform.isWindows) return 'windows';
+    if (Platform.isMacOS) return 'macos';
+    if (Platform.isLinux) return 'linux';
+    return Platform.operatingSystem;
+  }
+
+  String? _deviceLabel() {
+    final label = Platform.localHostname.trim();
+    return label.isEmpty ? null : label;
   }
 
   String? _nonEmptyText(dynamic value) {
@@ -202,7 +219,69 @@ class _PosScreenState extends State<PosScreen>
       final value = _nonEmptyText(data[key]);
       if (value != null) return value;
     }
+    final orderData = _messageOrderData(data);
+    if (orderData != null) {
+      for (final key in keys) {
+        final value = _nonEmptyText(orderData[key]);
+        if (value != null) return value;
+      }
+    }
     return null;
+  }
+
+  Map<String, dynamic>? _messageOrderData(Map<String, dynamic> data) {
+    final rawOrderData = data['orderData'] ?? data['order_data'];
+    if (rawOrderData is Map) {
+      return Map<String, dynamic>.from(rawOrderData);
+    }
+    if (rawOrderData is String && rawOrderData.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawOrderData);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  Map<String, dynamic>? _receiptDataFromMessageOrderData(
+    Map<String, dynamic> messageData,
+  ) {
+    final orderData = _messageOrderData(messageData);
+    if (orderData == null) return null;
+
+    final rawItems = orderData['items'];
+    if (rawItems is! List || rawItems.isEmpty) return null;
+
+    final items = rawItems.whereType<Map>().map((raw) {
+      final item = Map<String, dynamic>.from(raw);
+      return {
+        'product_name':
+            item['product_name'] ?? item['productName'] ?? item['name'],
+        'quantity': item['quantity'] ?? item['qty'] ?? 1,
+        'variant': item['variant'],
+        'note': item['note'],
+        'price': item['price'] ?? 0,
+      };
+    }).toList();
+
+    return {
+      'brand_name': _brandSettings['name'] ?? 'เธฃเนเธฒเธเธเธญเธเธเธธเธ“',
+      'table_label':
+          orderData['table_label'] ??
+          orderData['tableLabel'] ??
+          orderData['tableName'] ??
+          messageData['table_label'] ??
+          'Walk-in',
+      'order_id':
+          orderData['order_id'] ??
+          orderData['orderId'] ??
+          messageData['order_id'] ??
+          messageData['orderId'] ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      'items': items,
+      'total_amount': orderData['total_amount'] ?? orderData['totalPrice'] ?? 0,
+      'is_kitchen_ticket': true,
+    };
   }
 
   Map<String, dynamic>? _findOrderById(String orderId) {
@@ -253,12 +332,41 @@ class _PosScreenState extends State<PosScreen>
         .toSet();
     final messageOrderId = _messageOrderId(messageData);
 
-    await _fetchPosData();
+    Map<String, dynamic>? incomingOrder;
+    for (var attempt = 0; attempt < 4; attempt++) {
+      if (attempt > 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 900));
+      }
+      await _fetchPosData();
+      incomingOrder = _findIncomingOrder(messageOrderId, knownOrderIds);
+      if (incomingOrder != null) break;
+    }
 
     if (!shouldPrint) return;
 
-    final incomingOrder = _findIncomingOrder(messageOrderId, knownOrderIds);
-    if (incomingOrder == null) return;
+    if (incomingOrder == null) {
+      final fallbackReceiptData = _receiptDataFromMessageOrderData(messageData);
+      if (fallbackReceiptData == null) return;
+
+      final fallbackOrderId = _nonEmptyText(fallbackReceiptData['order_id']);
+      final printedKey = 'auto_printed_orders_${widget.brandId}';
+      final printedIds = prefs.getStringList(printedKey) ?? <String>[];
+      if (fallbackOrderId != null && printedIds.contains(fallbackOrderId)) {
+        return;
+      }
+
+      final success = await _printReceiptFromPos(fallbackReceiptData);
+      if (!success || fallbackOrderId == null) return;
+
+      await prefs.setStringList(
+        printedKey,
+        [
+          fallbackOrderId,
+          ...printedIds.where((id) => id != fallbackOrderId),
+        ].take(80).toList(),
+      );
+      return;
+    }
 
     final orderId = _nonEmptyText(incomingOrder['id']);
     if (orderId == null) return;
@@ -276,6 +384,7 @@ class _PosScreenState extends State<PosScreen>
       'order_id': orderId,
       'items': items,
       'total_amount': _orderTotal(incomingOrder),
+      'is_kitchen_ticket': true,
     };
 
     final success = await _printReceiptFromPos(receiptData);
@@ -927,7 +1036,6 @@ class _PosScreenState extends State<PosScreen>
         },
       );
     } finally {
-      ipController.dispose();
       _isPrinterFailureModalOpen = false;
     }
   }
@@ -1822,25 +1930,37 @@ class _PosScreenState extends State<PosScreen>
         product,
         _calculatePrice,
       );
-      if (selectedVariant != null) _addToCart(product, selectedVariant);
+      if (selectedVariant != null) await _addToCart(product, selectedVariant);
     } else {
-      _addToCart(product, 'normal');
+      await _addToCart(product, 'normal');
     }
   }
 
-  void _addToCart(Map<String, dynamic> product, String variant) {
+  Future<void> _addToCart(Map<String, dynamic> product, String variant) async {
+    final draftOrderId = await _ensureWalkInDraftOrder();
     final pricing = _calculatePrice(product, variant);
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    String? orderItemId;
+    var nextQty = 1;
+
     setState(() {
       var existingIndex = _cart.indexWhere(
         (item) => item['id'] == product['id'] && item['variant'] == variant,
       );
       if (existingIndex > -1) {
         _cart[existingIndex]['qty'] += 1;
+        orderItemId = _cart[existingIndex]['order_item_id']?.toString();
+        nextQty = _cart[existingIndex]['qty'] as int;
       } else {
+        orderItemId = const Uuid().v4();
         _cart.add({
+          'order_item_id': orderItemId,
+          'order_id': draftOrderId,
           'id': product['id'],
           'name': product['name'],
           'barcode': product['barcode'],
+          'image_url': product['image_url'] ?? product['image_name'],
+          'local_image_path': product['local_image_path'],
           'variant': variant,
           'price': pricing['final'],
           'original_price': pricing['original'],
@@ -1850,10 +1970,478 @@ class _PosScreenState extends State<PosScreen>
         });
       }
     });
+
+    await _upsertWalkInDraftItem(
+      orderId: draftOrderId,
+      itemId: orderItemId!,
+      product: product,
+      variant: variant,
+      pricing: pricing,
+      quantity: nextQty,
+      createdAt: nowIso,
+    );
+    await _updateWalkInDraftTotal();
     _triggerCartBounce();
   }
 
-  void _removeFromCart(int index) => setState(() => _cart.removeAt(index));
+  Future<String> _ensureWalkInDraftOrder() async {
+    if (_walkInDraftOrderId != null) return _walkInDraftOrderId!;
+
+    final orderId = const Uuid().v4();
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final db = await DatabaseHelper.instance.database;
+    await db.insert('orders', {
+      'id': orderId,
+      'brand_id': widget.brandId,
+      'table_label': 'Walk-in',
+      'status': 'pending',
+      'total_price': 0.0,
+      'type': 'pos',
+      'created_at': nowIso,
+      'updated_at': nowIso,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    _walkInDraftOrderId = orderId;
+    return orderId;
+  }
+
+  Future<void> _restoreWalkInDraftOrder() async {
+    if (_walkInDraftOrderId != null || _cart.isNotEmpty) return;
+
+    try {
+      final db = await DatabaseHelper.instance.database;
+      final orders = await db.query(
+        'orders',
+        where: 'brand_id = ? AND type = ? AND status = ?',
+        whereArgs: [widget.brandId, 'pos', 'pending'],
+        orderBy: 'updated_at DESC, created_at DESC',
+        limit: 1,
+      );
+      if (orders.isEmpty) return;
+
+      final orderId = orders.first['id']?.toString();
+      if (orderId == null || orderId.isEmpty) return;
+
+      final items = await db.query(
+        'order_items',
+        where: 'order_id = ?',
+        whereArgs: [orderId],
+        orderBy: 'created_at ASC',
+      );
+
+      final activeItems = <Map<String, dynamic>>[];
+      final cancelledItems = <Map<String, dynamic>>[];
+
+      for (final row in items) {
+        final status = row['status']?.toString().toLowerCase() ?? 'active';
+        final cartItem = _cartItemFromDraftRow(orderId, row);
+        if (status == 'cancelled') {
+          cancelledItems.add({
+            ...cartItem,
+            'status': 'cancelled',
+            'cancelled_by': row['cancelled_by'],
+            'cancelled_at': row['cancelled_at'],
+          });
+        } else {
+          activeItems.add(cartItem);
+        }
+      }
+
+      if (activeItems.isEmpty) return;
+      if (!mounted) return;
+      setState(() {
+        _walkInDraftOrderId = orderId;
+        _cart
+          ..clear()
+          ..addAll(activeItems);
+        _cancelledCartItems
+          ..clear()
+          ..addAll(cancelledItems);
+      });
+    } catch (error) {
+      debugPrint('[OFFLINE POS] Cannot restore pending walk-in order: $error');
+    }
+  }
+
+  Map<String, dynamic> _cartItemFromDraftRow(
+    String orderId,
+    Map<String, dynamic> row,
+  ) {
+    dynamic promotionSnapshot = row['promotion_snapshot'];
+    if (promotionSnapshot is String && promotionSnapshot.trim().isNotEmpty) {
+      try {
+        promotionSnapshot = jsonDecode(promotionSnapshot);
+      } catch (_) {}
+    }
+
+    final productId = row['product_id']?.toString();
+    final product = productId == null
+        ? null
+        : _products.cast<Map<String, dynamic>?>().firstWhere(
+            (item) => item?['id']?.toString() == productId,
+            orElse: () => null,
+          );
+
+    return {
+      'order_item_id': row['id'],
+      'order_id': orderId,
+      'id': row['product_id'],
+      'name': row['product_name'],
+      'image_url': product?['image_url'],
+      'local_image_path': product?['local_image_path'],
+      'variant': row['variant'],
+      'price': row['price'],
+      'original_price': row['original_price'],
+      'discount': row['discount'],
+      'promotion_snapshot': promotionSnapshot,
+      'note': row['note'],
+      'qty': int.tryParse(row['quantity']?.toString() ?? '1') ?? 1,
+    };
+  }
+
+  Future<void> _upsertWalkInDraftItem({
+    required String orderId,
+    required String itemId,
+    required Map<String, dynamic> product,
+    required String variant,
+    required Map<String, dynamic> pricing,
+    required int quantity,
+    required String createdAt,
+  }) async {
+    final db = await DatabaseHelper.instance.database;
+    await db.insert('order_items', {
+      'id': itemId,
+      'order_id': orderId,
+      'product_id': product['id'],
+      'product_name': product['name'],
+      'quantity': quantity,
+      'price': pricing['final'],
+      'original_price': pricing['original'],
+      'discount': pricing['discount'],
+      'variant': variant,
+      'promotion_snapshot': jsonEncode(pricing['promotion_snapshot'] ?? {}),
+      'status': 'active',
+      'created_at': createdAt,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> _updateWalkInDraftTotal() async {
+    final orderId = _walkInDraftOrderId;
+    if (orderId == null) return;
+    final db = await DatabaseHelper.instance.database;
+    await db.update(
+      'orders',
+      {
+        'total_price': _rawTotal,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [orderId],
+    );
+  }
+
+  String _currentUserId() {
+    final token = _accessToken;
+    if (token == null || token.isEmpty) return 'unknown';
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return 'unknown';
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+      return payload['sub']?.toString() ?? 'unknown';
+    } catch (_) {
+      return 'unknown';
+    }
+  }
+
+  String? _currentUserUuidOrNull() {
+    final userId = _currentUserId();
+    final uuidPattern = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    return uuidPattern.hasMatch(userId) ? userId : null;
+  }
+
+  Future<void> _onCancelWalkInCartItemClick(int index) async {
+    if (_activeTab != 'pos') return;
+    if (index < 0 || index >= _cart.length) return;
+
+    final item = Map<String, dynamic>.from(_cart[index]);
+    final itemName = item['name'] ?? item['product_name'] ?? 'รายการนี้';
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'ยืนยันลบสินค้า',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text('ต้องการลบ $itemName ออกจากสรุปยอดใช่ไหม?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('ไม่ลบ'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.rose500),
+            child: const Text(
+              'ลบสินค้า',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final orderId = item['order_id']?.toString() ?? _walkInDraftOrderId;
+    final itemId = item['order_item_id']?.toString();
+    final cancelledBy = _currentUserUuidOrNull();
+
+    setState(() {
+      _cart.removeAt(index);
+      _cancelledCartItems.add({
+        ...item,
+        'status': 'cancelled',
+        'cancelled_by': cancelledBy,
+        'cancelled_at': nowIso,
+      });
+    });
+
+    final db = await DatabaseHelper.instance.database;
+    if (itemId != null && itemId.isNotEmpty) {
+      await db.update(
+        'order_items',
+        {
+          'status': 'cancelled',
+          'cancelled_by': cancelledBy,
+          'cancelled_at': nowIso,
+          'updated_at': nowIso,
+        },
+        where: 'id = ?',
+        whereArgs: [itemId],
+      );
+    }
+
+    if (_cart.isEmpty && orderId != null) {
+      await _cancelEmptyWalkInDraftOrder(
+        orderId: orderId,
+        cancelledBy: cancelledBy,
+        cancelledAt: nowIso,
+      );
+      if (mounted) {
+        setState(() {
+          _walkInDraftOrderId = null;
+          _cancelledCartItems.clear();
+        });
+      }
+    } else {
+      await _updateWalkInDraftTotal();
+    }
+  }
+
+  Future<void> _cancelEmptyWalkInDraftOrder({
+    required String orderId,
+    required String? cancelledBy,
+    required String cancelledAt,
+  }) async {
+    final db = await DatabaseHelper.instance.database;
+    final orderRows = await db.query(
+      'orders',
+      where: 'id = ?',
+      whereArgs: [orderId],
+      limit: 1,
+    );
+    final itemRows = await db.query(
+      'order_items',
+      where: 'order_id = ?',
+      whereArgs: [orderId],
+    );
+    final itemsToSync = itemRows.map((row) {
+      final item = Map<String, dynamic>.from(row);
+      item.remove('updated_at');
+      return item;
+    }).toList();
+
+    await db.transaction((txn) async {
+      await txn.update(
+        'orders',
+        {
+          'status': 'cancelled',
+          'total_price': 0.0,
+          'cancelled_by': cancelledBy,
+          'cancelled_at': cancelledAt,
+          'updated_at': cancelledAt,
+        },
+        where: 'id = ?',
+        whereArgs: [orderId],
+      );
+
+      final newOrderData = orderRows.isEmpty
+          ? <String, dynamic>{
+              'id': orderId,
+              'brand_id': widget.brandId,
+              'table_label': 'Walk-in',
+              'status': 'cancelled',
+              'total_price': 0.0,
+              'type': 'pos',
+              'created_at': cancelledAt,
+              'updated_at': cancelledAt,
+              'cancelled_by': cancelledBy,
+              'cancelled_at': cancelledAt,
+            }
+          : {
+              ...Map<String, dynamic>.from(orderRows.first),
+              'status': 'cancelled',
+              'total_price': 0.0,
+              'cancelled_by': cancelledBy,
+              'cancelled_at': cancelledAt,
+              'updated_at': cancelledAt,
+            };
+
+      await txn.insert('sync_queue', {
+        'type': 'PAYMENT',
+        'payload': jsonEncode({
+          'action': 'cancel_order',
+          'orderId': orderId,
+          'brandId': widget.brandId,
+          'cancelledBy': cancelledBy,
+          'cancelledAt': cancelledAt,
+          'isNewOffline': true,
+          'newOrderData': newOrderData,
+          'itemsToSave': itemsToSync,
+        }),
+        'status': 'pending',
+      });
+    });
+  }
+
+  void _markSelectedTableItemCancelled({
+    required String itemId,
+    required String userId,
+    required String cancelledAt,
+  }) {
+    void markItem(Map<String, dynamic> order) {
+      final items = order['order_items'];
+      if (items is! List) return;
+      order['order_items'] = items.map((rawItem) {
+        if (rawItem is! Map) return rawItem;
+        final item = Map<String, dynamic>.from(rawItem);
+        if (item['id']?.toString() == itemId) {
+          item['status'] = 'cancelled';
+          item['cancelled_by'] = userId;
+          item['cancelled_at'] = cancelledAt;
+        }
+        return item;
+      }).toList();
+    }
+
+    setState(() {
+      if (_selectedOrder != null) markItem(_selectedOrder!);
+      _unpaidOrders = _unpaidOrders.map((order) {
+        final updated = Map<String, dynamic>.from(order);
+        markItem(updated);
+        return updated;
+      }).toList();
+    });
+  }
+
+  Future<void> _onCancelTableOrderItemClick(int index) async {
+    if (_activeTab != 'tables' || _selectedOrder == null) return;
+    final items = _selectedOrder!['order_items'] as List? ?? const [];
+    if (index < 0 || index >= items.length || items[index] is! Map) return;
+
+    final item = Map<String, dynamic>.from(items[index] as Map);
+    if (_isCancelledItem(item)) return;
+
+    final itemId = item['id']?.toString();
+    if (itemId == null || itemId.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'ยืนยันยกเลิกรายการ',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'ต้องการยกเลิก ${item['product_name'] ?? item['name'] ?? 'รายการนี้'} ใช่ไหม?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('ไม่'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.rose500),
+            child: const Text(
+              'ยกเลิกรายการ',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final userId = _currentUserId();
+      final response = await http.post(
+        Uri.parse(ApiService.syncOffline),
+        headers: {
+          'Content-Type': 'application/json',
+          if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
+        },
+        body: jsonEncode({
+          'action': 'cancel_order_item',
+          'itemId': itemId,
+          'orderId': item['order_id'] ?? _selectedOrder!['id'],
+          'brandId': widget.brandId,
+          'cancelledAt': nowIso,
+        }),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(response.body);
+      }
+
+      _markSelectedTableItemCancelled(
+        itemId: itemId,
+        userId: userId,
+        cancelledAt: nowIso,
+      );
+      unawaited(_fetchPosData());
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ยกเลิกรายการโต๊ะแล้ว'),
+          backgroundColor: AppColors.emerald500,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ยกเลิกรายการไม่สำเร็จ: $e'),
+          backgroundColor: AppColors.rose500,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleCartItemRemove(int index) async {
+    if (_activeTab == 'tables') {
+      await _onCancelTableOrderItemClick(index);
+      return;
+    }
+    await _onCancelWalkInCartItemClick(index);
+  }
 
   String? _normalizeIdentity(dynamic value, String prefix) {
     if (value == null) return null;
@@ -1899,16 +2487,42 @@ class _PosScreenState extends State<PosScreen>
     return null;
   }
 
+  bool _isCancelledItem(Map<String, dynamic> item) =>
+      item['status']?.toString().toLowerCase() == 'cancelled';
+
   double _orderTotal(Map<String, dynamic> order) {
+    final items = order['order_items'];
+    if (items is List) {
+      final hasCancelledItems = items.any((item) {
+        if (item is! Map) return false;
+        return _isCancelledItem(Map<String, dynamic>.from(item));
+      });
+      if (hasCancelledItems) {
+        return items.fold<double>(0.0, (sum, item) {
+          if (item is! Map) return sum;
+          final itemMap = Map<String, dynamic>.from(item);
+          if (_isCancelledItem(itemMap)) return sum;
+          final price =
+              double.tryParse(itemMap['price']?.toString() ?? '0') ?? 0.0;
+          final qty =
+              double.tryParse(
+                (itemMap['qty'] ?? itemMap['quantity'] ?? 1).toString(),
+              ) ??
+              1.0;
+          return sum + (price * qty);
+        });
+      }
+    }
+
     final parsedTotal = double.tryParse(order['total_price']?.toString() ?? '');
     if (parsedTotal != null) return parsedTotal;
 
-    final items = order['order_items'];
     if (items is! List) return 0.0;
 
     return items.fold<double>(0.0, (sum, item) {
       if (item is! Map) return sum;
       final itemMap = Map<String, dynamic>.from(item);
+      if (_isCancelledItem(itemMap)) return sum;
       final price = double.tryParse(itemMap['price']?.toString() ?? '0') ?? 0.0;
       final qty =
           double.tryParse(
@@ -2082,7 +2696,11 @@ class _PosScreenState extends State<PosScreen>
 
   int get _totalItems {
     if (_activeTab == 'tables' && _selectedOrder != null) {
-      return (_selectedOrder!['order_items'] as List?)?.length ?? 0;
+      final items = _selectedOrder!['order_items'] as List? ?? const [];
+      return items.where((item) {
+        if (item is! Map) return false;
+        return !_isCancelledItem(Map<String, dynamic>.from(item));
+      }).length;
     }
     return _cart.fold(0, (sum, item) => sum + (item['qty'] as int));
   }
@@ -2217,7 +2835,7 @@ class _PosScreenState extends State<PosScreen>
       final tableOrderFallbackId = const Uuid().v4();
 
       String finalOrderId = _activeTab == 'pos'
-          ? const Uuid().v4()
+          ? await _ensureWalkInDraftOrder()
           : (sourceOrderIds.isNotEmpty
                 ? sourceOrderIds.first
                 : (selectedOrderId ?? tableOrderFallbackId));
@@ -2245,10 +2863,10 @@ class _PosScreenState extends State<PosScreen>
       List<Map<String, dynamic>> itemsToSave = [];
 
       if (_activeTab == 'pos') {
-        itemsToSave = _cart
+        final activeItemsToSave = _cart
             .map(
               (i) => <String, dynamic>{
-                'id': const Uuid().v4(),
+                'id': i['order_item_id'] ?? const Uuid().v4(),
                 'order_id': finalOrderId,
                 'product_id': i['id'],
                 'product_name': i['name'],
@@ -2264,17 +2882,42 @@ class _PosScreenState extends State<PosScreen>
               },
             )
             .toList();
+        final cancelledItemsToSave = _cancelledCartItems
+            .map(
+              (i) => <String, dynamic>{
+                'id': i['order_item_id'] ?? const Uuid().v4(),
+                'order_id': finalOrderId,
+                'product_id': i['product_id'] ?? i['id'],
+                'product_name': i['product_name'] ?? i['name'] ?? 'Unknown',
+                'quantity': i['quantity'] ?? i['qty'] ?? 1,
+                'price': i['price'] ?? 0.0,
+                'original_price': i['original_price'],
+                'discount': i['discount'],
+                'variant': i['variant'],
+                'note': i['note'],
+                'promotion_snapshot': i['promotion_snapshot'],
+                'status': 'cancelled',
+                'cancelled_by': i['cancelled_by'],
+                'cancelled_at': i['cancelled_at'] ?? nowIso,
+                'created_at': nowIso,
+              },
+            )
+            .toList();
+        itemsToSave = [...activeItemsToSave, ...cancelledItemsToSave];
       } else {
         final rawItems = List<Map<String, dynamic>>.from(
           selectedOrderItems ?? [],
         );
-        itemsToSave = rawItems.map((i) {
+        itemsToSave = rawItems.where((i) => !_isCancelledItem(i)).map((i) {
           var mapped = Map<String, dynamic>.from(i);
           mapped['order_id'] = finalOrderId;
           mapped.remove('updated_at');
           return mapped;
         }).toList();
       }
+      final receiptItems = itemsToSave
+          .where((item) => !_isCancelledItem(item))
+          .toList();
 
       print(
         "📦 [CHECKOUT] 4. เตรียม Item ลงฐานข้อมูลจำนวน: ${itemsToSave.length} รายการ",
@@ -2315,6 +2958,9 @@ class _PosScreenState extends State<PosScreen>
         },
         syncPayload: {
           'cartItems': _activeTab == 'pos' ? _cart : selectedOrderItems,
+          'cancelledCartItems': _activeTab == 'pos'
+              ? _cancelledCartItems
+              : const <Map<String, dynamic>>[],
           'brandId': widget.brandId,
           'type': _activeTab,
           'used_tokens': usedTableTokens,
@@ -2332,7 +2978,7 @@ class _PosScreenState extends State<PosScreen>
         'brand_name': _brandSettings['name'] ?? 'ร้านของคุณ',
         'table_label': tableLabel,
         'order_id': finalOrderId,
-        'items': itemsToSave,
+        'items': receiptItems,
         'total_amount': _payableAmount,
         'payment_method': _paymentMethod.toUpperCase(),
         'received_amount': _paymentMethod == 'promptpay'
@@ -2351,7 +2997,7 @@ class _PosScreenState extends State<PosScreen>
             'brand_name': _brandSettings['name'] ?? 'ร้านของคุณ',
             'table_label': tableLabel,
             'order_id': finalOrderId,
-            'items': itemsToSave,
+            'items': receiptItems,
             'payment_method': _paymentMethod.toUpperCase(),
             'total_amount': _payableAmount,
             'received_amount': _paymentMethod == 'promptpay'
@@ -2364,6 +3010,8 @@ class _PosScreenState extends State<PosScreen>
             setState(() {
               if (_activeTab == 'pos') {
                 _cart.clear();
+                _cancelledCartItems.clear();
+                _walkInDraftOrderId = null;
               } else {
                 _selectedOrder = null;
                 if (selectedTableId != null && nextTableTokens.isNotEmpty) {
@@ -2402,6 +3050,7 @@ class _PosScreenState extends State<PosScreen>
             final checkoutApiUrl = "${ApiService.baseUrl}/pos/checkout";
 
             for (final checkoutOrderId in checkoutOrderIds) {
+              if (checkoutOrderId != checkoutOrderIds.first) continue;
               print(
                 "   -> 📡 [POST] Checkout: $checkoutApiUrl ($checkoutOrderId)",
               );
@@ -2414,6 +3063,7 @@ class _PosScreenState extends State<PosScreen>
                 body: jsonEncode({
                   'order_id': checkoutOrderId,
                   'order_ids': checkoutOrderIds,
+                  'payment_id': localPayId,
                   'table_id': selectedTableId,
                   'table_label': tableLabel,
                   'used_tokens': usedTableTokens,
@@ -2440,6 +3090,7 @@ class _PosScreenState extends State<PosScreen>
           try {
             // 🌟 แก้ไข: ใช้ ApiService.baseUrl ตรงๆ โค้ดสะอาดขึ้น 10 เท่า
             final fcmApiUrl = "${ApiService.baseUrl}/send-notification";
+            final currentFcmToken = await FirebaseMessaging.instance.getToken();
 
             print(
               "📣 [FCM] กำลังยิงแจ้งเตือนไปบอกเครื่องอื่นว่าคิดเงินแล้ว...",
@@ -2454,6 +3105,7 @@ class _PosScreenState extends State<PosScreen>
                 'brandId': widget.brandId,
                 'message': 'โต๊ะ $tableLabel ชำระเงินเรียบร้อยแล้ว!',
                 'type': 'ORDER_PAID',
+                'excludeToken': currentFcmToken,
                 'title': '💰 ชำระเงินสำเร็จ',
               }),
             );
@@ -2550,28 +3202,250 @@ class _PosScreenState extends State<PosScreen>
     }
   }
 
+  Future<void> _onCancelOrderClick() async {
+    final bool isWalkIn = (_activeTab == 'pos');
+
+    if (isWalkIn && _cart.isEmpty) return;
+    if (!isWalkIn && _selectedOrder == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'ยืนยันยกเลิกออเดอร์',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'คุณต้องการยกเลิกออเดอร์นี้ใช่หรือไม่?\nการยกเลิกจะถูกบันทึกในระบบ',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('ไม่', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.rose500),
+            child: const Text(
+              'ใช่, ยกเลิกออเดอร์',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    String userId = 'unknown';
+    if (_accessToken != null && _accessToken!.isNotEmpty) {
+      try {
+        final parts = _accessToken!.split('.');
+        if (parts.length == 3) {
+          final payload = jsonDecode(
+            utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+          );
+          userId = payload['sub'] ?? 'unknown';
+        }
+      } catch (_) {}
+    }
+
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final db = await DatabaseHelper.instance.database;
+    final cancelledBy = _currentUserUuidOrNull();
+
+    try {
+      if (isWalkIn) {
+        // สร้างหัวออเดอร์สำหรับ Walk-in ที่ถูกยกเลิก
+        final String cancelOrderId = _walkInDraftOrderId ?? const Uuid().v4();
+        final allWalkInItems = [..._cart, ..._cancelledCartItems];
+        final itemsToCancel = allWalkInItems
+            .map(
+              (item) => {
+                'id': item['order_item_id'] ?? const Uuid().v4(),
+                'order_id': cancelOrderId,
+                'product_id': item['product_id'] ?? item['id'],
+                'product_name':
+                    item['product_name'] ?? item['name'] ?? 'Unknown',
+                'quantity': item['quantity'] ?? item['qty'] ?? 1,
+                'price': item['price'] ?? 0.0,
+                'original_price': item['original_price'],
+                'discount': item['discount'],
+                'variant': item['variant'],
+                'note': item['note'],
+                'promotion_snapshot': item['promotion_snapshot'] is String
+                    ? item['promotion_snapshot']
+                    : jsonEncode(item['promotion_snapshot'] ?? {}),
+                'created_at': nowIso,
+                'status': 'cancelled',
+                'cancelled_by': cancelledBy,
+                'cancelled_at': nowIso,
+              },
+            )
+            .toList();
+
+        await db.transaction((txn) async {
+          // บันทึกหัวออเดอร์
+          await txn.insert('orders', {
+            'id': cancelOrderId,
+            'brand_id': widget.brandId,
+            'table_label': 'Walk-in',
+            'status': 'cancelled',
+            'total_price': _payableAmount,
+            'type': 'pos',
+            'created_at': nowIso,
+            'updated_at': nowIso,
+            'cancelled_by': cancelledBy,
+            'cancelled_at': nowIso,
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+          // บันทึกรายการสินค้าในตะกร้า
+          for (var item in itemsToCancel) {
+            await txn.insert(
+              'order_items',
+              item,
+              conflictAlgorithm: ConflictAlgorithm.replace,
+            );
+          }
+
+          // โยนลง sync_queue เพื่อส่งไปให้ cloud สรุปยอด
+          await txn.insert('sync_queue', {
+            'type': 'PAYMENT',
+            'payload': jsonEncode({
+              'action': 'cancel_order',
+              'orderId': cancelOrderId,
+              'brandId': widget.brandId,
+              'cancelledBy': cancelledBy,
+              'cancelledAt': nowIso,
+              'isNewOffline': true, // เป็นออเดอร์ที่เกิดออฟไลน์ใหม่เลย
+              'newOrderData': {
+                'id': cancelOrderId,
+                'brand_id': widget.brandId,
+                'table_label': 'Walk-in',
+                'status': 'cancelled',
+                'total_price': _payableAmount,
+                'type': 'pos',
+                'created_at': nowIso,
+                'updated_at': nowIso,
+                'cancelled_by': cancelledBy,
+                'cancelled_at': nowIso,
+              },
+              'itemsToSave': itemsToCancel,
+            }),
+            'status': 'pending',
+          });
+        });
+
+        setState(() {
+          _cart.clear();
+          _cancelledCartItems.clear();
+          _walkInDraftOrderId = null;
+        });
+      } else {
+        // กรณีเป็นบิลที่ดึงมาจากโต๊ะ
+        final orderId = _selectedOrder!['id'];
+        final sourceOrderIds = _sourceOrderIdsFor(_selectedOrder);
+        final cancelOrderIds = sourceOrderIds.isNotEmpty
+            ? sourceOrderIds
+            : [orderId.toString()];
+        final primaryCancelOrderId = cancelOrderIds.first;
+        final response = await http.post(
+          Uri.parse(ApiService.syncOffline),
+          headers: {
+            'Content-Type': 'application/json',
+            if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
+          },
+          body: jsonEncode({
+            'action': 'cancel_order',
+            'orderId': primaryCancelOrderId,
+            'orderIds': cancelOrderIds,
+            'brandId': widget.brandId,
+            'cancelledAt': nowIso,
+          }),
+        );
+
+        if (response.statusCode != 200 && response.statusCode != 201) {
+          throw Exception(response.body);
+        }
+        await db.transaction((txn) async {
+          await txn.update(
+            'orders',
+            {
+              'status': 'cancelled',
+              'cancelled_by': userId,
+              'cancelled_at': nowIso,
+              'updated_at': nowIso,
+            },
+            where:
+                'id IN (${List.filled(cancelOrderIds.length, '?').join(',')})',
+            whereArgs: cancelOrderIds,
+          );
+
+          await txn.insert('sync_queue', {
+            'type': 'PAYMENT',
+            'payload': jsonEncode({
+              'action': 'cancel_order',
+              'orderId': primaryCancelOrderId,
+              'orderIds': cancelOrderIds,
+              'brandId': widget.brandId,
+              'cancelledBy': userId,
+              'cancelledAt': nowIso,
+            }),
+            'status': 'pending',
+          });
+        });
+
+        setState(() {
+          _selectedOrder = null;
+          _unpaidOrders = _unpaidOrders
+              .where(
+                (order) => !cancelOrderIds.contains(order['id']?.toString()),
+              )
+              .toList();
+        });
+      }
+
+      _fetchPosData();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ยกเลิกออเดอร์และบันทึกออฟไลน์แล้ว'),
+            backgroundColor: AppColors.emerald500,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error cancelling order offline: $e');
+    }
+  }
+
   void _showMobileCartModal() {
+    final rootMediaQuery = MediaQuery.of(context);
+    final safeTop = rootMediaQuery.viewPadding.top;
+    final sheetHeight = rootMediaQuery.size.height - safeTop;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             return SizedBox(
-              height: MediaQuery.of(context).size.height * 0.96,
+              height: sheetHeight,
               child: Stack(
                 children: [
                   Positioned.fill(
-                    top: 36,
                     child: Container(
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(24),
+                          top: Radius.circular(18),
                         ),
                       ),
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
                       child: CartPanel(
                         activeTab: _activeTab,
                         selectedOrder: _selectedOrder,
@@ -2579,11 +3453,20 @@ class _PosScreenState extends State<PosScreen>
                         paymentMethod: _paymentMethod,
                         rawTotal: _rawTotal,
                         payableAmount: _payableAmount,
+                        showProductImages: _showProductImages,
                         formatCurrency: _formatCurrency,
-                        onRemoveFromCart: (index) {
-                          setModalState(() => _removeFromCart(index));
+                        onRemoveFromCart: (index) async {
+                          await _handleCartItemRemove(index);
                           setState(() {});
+                          setModalState(() {});
                         },
+                        onCancelOrder: _activeTab == 'tables'
+                            ? () async {
+                                await _onCancelOrderClick();
+                                setState(() {});
+                                setModalState(() {});
+                              }
+                            : null,
                         onPaymentMethodChanged: (method) {
                           setModalState(() => _paymentMethod = method);
                           setState(() => _paymentMethod = method);
@@ -2596,15 +3479,22 @@ class _PosScreenState extends State<PosScreen>
                     ),
                   ),
                   Positioned(
-                    top: 6,
-                    right: 12,
+                    top: 8,
+                    right: 10,
                     child: Material(
                       color: AppColors.slate100,
                       shape: const CircleBorder(),
+                      elevation: 1,
                       child: IconButton(
+                        constraints: const BoxConstraints.tightFor(
+                          width: 21,
+                          height: 21,
+                        ),
+                        padding: EdgeInsets.zero,
                         icon: const Icon(
                           Icons.close_rounded,
                           color: AppColors.slate500,
+                          size: 13,
                         ),
                         tooltip: 'ปิด',
                         onPressed: () => Navigator.pop(context),
@@ -2624,20 +3514,26 @@ class _PosScreenState extends State<PosScreen>
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 1024;
-    final pagePadding = isDesktop ? 24.0 : 8.0;
+    final pagePadding = isDesktop
+        ? const EdgeInsets.fromLTRB(24, 0, 24, 24)
+        : const EdgeInsets.all(8);
 
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: AppColors.bgLight,
       drawer: const AppSidebar(activeMenu: 'pos'),
       body: _isLoadingAPI
-          ? const SuparPosLoading(message: 'กำลังโหลดข้อมูลร้านและสินค้า')
+          ? const SuparPosLoading(
+              message: 'กำลังโหลดข้อมูลร้านและสินค้า',
+              fullScreen: false,
+            )
           : SafeArea(
-              child: Center(
+              child: Align(
+                alignment: Alignment.topCenter,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1600),
                   child: Padding(
-                    padding: EdgeInsets.all(pagePadding),
+                    padding: pagePadding,
                     child: isDesktop
                         ? _buildDesktopLayout()
                         : _buildMobileLayout(),
@@ -2669,8 +3565,12 @@ class _PosScreenState extends State<PosScreen>
                 paymentMethod: _paymentMethod,
                 rawTotal: _rawTotal,
                 payableAmount: _payableAmount,
+                showProductImages: _showProductImages,
                 formatCurrency: _formatCurrency,
-                onRemoveFromCart: _removeFromCart,
+                onRemoveFromCart: _handleCartItemRemove,
+                onCancelOrder: _activeTab == 'tables'
+                    ? _onCancelOrderClick
+                    : null,
                 onPaymentMethodChanged: (method) =>
                     setState(() => _paymentMethod = method),
                 onMainPaymentClick: _onMainPaymentClick,

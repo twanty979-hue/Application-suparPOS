@@ -13,12 +13,12 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'login.dart';
 import 'services/app_notification_service.dart';
+import 'services/auto_print_service.dart';
 import 'services/printer_keep_alive_service.dart';
 import 'screens/pos_screen.dart';
 import 'screens/products_main_screen.dart';
 import 'services/storage_service.dart';
 import 'services/revenuecat_service.dart';
-import 'widgets/suparpos_loading.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,18 +59,34 @@ class _StartupGate extends StatefulWidget {
 }
 
 class _StartupGateState extends State<_StartupGate> {
-  late final Future<_BootstrapData> _bootstrapFuture = _bootstrap();
+  _BootstrapData? _bootstrapData;
+  String? _startupError;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_resolveStartup());
+    });
+  }
+
+  Future<void> _resolveStartup() async {
+    try {
+      final data = await _bootstrap();
+      if (!mounted) return;
+      setState(() => _bootstrapData = data);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _startupError = error.toString());
+    }
+  }
 
   Future<_BootstrapData> _bootstrap() async {
-    final results = await Future.wait<dynamic>([
-      dotenv.load(fileName: '.env'),
-      StorageService.getStartupSessionState(),
-      initializeDateFormatting('th', null),
-    ]);
-    final startupState = results[1] as StartupSessionState;
+    unawaited(initializeDateFormatting('th', null));
+    final startupState = await StorageService.getStartupSessionState();
 
     if (startupState.known) {
-      unawaited(_startBackgroundServices(startupState.brandId));
+      _scheduleBackgroundServices(startupState.brandId);
       return _BootstrapData(
         signedIn: startupState.signedIn && startupState.brandId.isNotEmpty,
         brandId: startupState.brandId.isEmpty ? null : startupState.brandId,
@@ -94,7 +110,7 @@ class _StartupGateState extends State<_StartupGate> {
       brandId: savedBrandId,
     );
 
-    unawaited(_startBackgroundServices(savedBrandId));
+    _scheduleBackgroundServices(savedBrandId);
 
     return _BootstrapData(
       signedIn: signedIn,
@@ -102,8 +118,20 @@ class _StartupGateState extends State<_StartupGate> {
     );
   }
 
+  void _scheduleBackgroundServices(String savedBrandId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(
+        Future<void>.delayed(
+          const Duration(milliseconds: 350),
+          () => _startBackgroundServices(savedBrandId),
+        ),
+      );
+    });
+  }
+
   Future<void> _startBackgroundServices(String savedBrandId) async {
     try {
+      await dotenv.load(fileName: '.env');
       await Future.wait([
         Purchases.setLogLevel(LogLevel.debug),
         Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
@@ -111,6 +139,7 @@ class _StartupGateState extends State<_StartupGate> {
       await AppNotificationService.initialize();
       if (savedBrandId.isNotEmpty) {
         await RevenueCatService.configure(appUserId: savedBrandId);
+        AutoPrintService.instance.start(savedBrandId);
         PrinterKeepAliveService.instance.start(savedBrandId);
       }
     } catch (error, stackTrace) {
@@ -121,23 +150,29 @@ class _StartupGateState extends State<_StartupGate> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_BootstrapData>(
-      future: _bootstrapFuture,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return _StartupError(error: snapshot.error.toString());
-        }
-        if (!snapshot.hasData) {
-          return const SuparPosLoading();
-        }
+    final startupError = _startupError;
+    if (startupError != null) {
+      return _StartupError(error: startupError);
+    }
 
-        final data = snapshot.data!;
-        if (data.signedIn && data.brandId != null) {
-          return PosScreen(brandId: data.brandId!);
-        }
-        return const LoginPage();
-      },
-    );
+    final data = _bootstrapData;
+    if (data == null) {
+      return const _StartupSplash();
+    }
+
+    if (data.signedIn && data.brandId != null) {
+      return PosScreen(brandId: data.brandId!);
+    }
+    return const LoginPage();
+  }
+}
+
+class _StartupSplash extends StatelessWidget {
+  const _StartupSplash();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(color: Color(0xFF70C56B));
   }
 }
 

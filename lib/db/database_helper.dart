@@ -27,10 +27,10 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    // 🔥 1. อัปเกรดเวอร์ชันจาก 5 เป็น 6 เพื่อทริกเกอร์ onUpgrade
+    // 🔥 1. อัปเกรดเวอร์ชันจาก 10 เป็น 11 เพื่อทริกเกอร์ onUpgrade (เพิ่มคอลัมน์ยกเลิกออเดอร์)
     return await openDatabase(
       path,
-      version: 10,
+      version: 11,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -103,6 +103,9 @@ class DatabaseHelper {
         total_price REAL,
         type TEXT,
         payment_id TEXT,
+        cancelled_at TEXT,
+        cancelled_by TEXT,
+        cancel_reason TEXT,
         created_at TEXT,
         updated_at TEXT
       )
@@ -286,6 +289,16 @@ class DatabaseHelper {
         );
       } catch (_) {
         // Column already exists on databases created by a development build.
+      }
+    }
+    if (oldVersion < 11) {
+      try {
+        await db.execute('ALTER TABLE orders ADD COLUMN cancelled_at TEXT;');
+        await db.execute('ALTER TABLE orders ADD COLUMN cancelled_by TEXT;');
+        await db.execute('ALTER TABLE orders ADD COLUMN cancel_reason TEXT;');
+        print("✨ [SQLite Migration] อัปเกรด V10 -> V11: เติมคอลัมน์การยกเลิกใน orders สำเร็จ!");
+      } catch (e) {
+        print("⚠️ [SQLite Migration Error]: $e");
       }
     }
   }

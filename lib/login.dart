@@ -8,9 +8,13 @@ import 'package:http/http.dart' as http;
 
 import 'api_service.dart';
 import 'screens/pos_screen.dart';
+import 'services/app_notification_service.dart';
+import 'services/auto_print_service.dart';
+import 'services/printer_keep_alive_service.dart';
 import 'services/revenuecat_service.dart';
 import 'services/profile_cache_service.dart';
 import 'services/storage_service.dart';
+import 'widgets/suparpos_loading.dart';
 
 enum _AuthStep {
   login,
@@ -405,7 +409,20 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _finishLogin(String brandId, String accessToken) async {
     await StorageService.saveBrandId(brandId);
     await StorageService.saveToken(accessToken);
+    try {
+      await AppNotificationService.initialize();
+    } catch (error, stackTrace) {
+      debugPrint('Notification service restart failed after login: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
     await RevenueCatService.configure(appUserId: brandId);
+    AutoPrintService.instance.start(brandId);
+    try {
+      PrinterKeepAliveService.instance.start(brandId);
+    } catch (error, stackTrace) {
+      debugPrint('Printer keep-alive start failed after login: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => PosScreen(brandId: brandId)),
@@ -553,6 +570,10 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
+          if (_loading || _routing)
+            const Positioned.fill(
+              child: IgnorePointer(child: SuparPosLoading(fullScreen: true)),
+            ),
         ],
       ),
     );

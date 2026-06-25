@@ -7,6 +7,7 @@ extension _PackageUpgradeSheet on _PackageTabState {
     final currentRank = _getPlanRank(_dynamicCurrentPlan);
     final filteredPlans = _dbPlans
         .where((p) => _getPlanRank(p['plan_key'] ?? '') >= currentRank)
+        .where((p) => (p['plan_key'] ?? '').toString().toLowerCase() != 'ultimate')
         .toList();
 
     _activePlanIndex = 0;

@@ -1,4 +1,5 @@
 // lib/screens/store_settings_screen.dart
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -10,11 +11,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:confetti/confetti.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api_service.dart';
 import 'package:Pos_Foodscan/services/storage_service.dart'; // 🌟 ใช้ตู้เซฟ
-import '../services/app_notification_service.dart';
-import '../theme/app_colors.dart';
 import '../widgets/app_sidebar.dart';
 import '../widgets/suparpos_navigation_loader.dart';
 import '../widgets/suparpos_loading.dart';
@@ -26,8 +26,9 @@ import '../widgets/store_settings/package_tab.dart';
 
 class StoreSettingsScreen extends StatefulWidget {
   final String brandId;
+  final int initialTab;
 
-  const StoreSettingsScreen({super.key, required this.brandId});
+  const StoreSettingsScreen({super.key, required this.brandId, this.initialTab = 0});
 
   @override
   State<StoreSettingsScreen> createState() => _StoreSettingsScreenState();
@@ -57,6 +58,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
 
   String? _accessToken;
   String? _logoUrl;
+  String? _localLogoPath;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -67,6 +69,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _activeTab = widget.initialTab;
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 3),
     );
@@ -147,6 +150,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
               }
               _isLoading = false;
             });
+            unawaited(_cacheLogoFromUrl(_logoUrl));
           }
         }
       } else if (response.statusCode == 401) {
@@ -170,6 +174,48 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
   void _onUpgradeSuccess() async {
     await _fetchSettings();
     _confettiController.play();
+  }
+
+  Future<File> _localLogoFile() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final logoDir = Directory(
+      '${appDir.path}${Platform.pathSeparator}brand_assets',
+    );
+    if (!await logoDir.exists()) {
+      await logoDir.create(recursive: true);
+    }
+    return File(
+      '${logoDir.path}${Platform.pathSeparator}logo_${widget.brandId}.webp',
+    );
+  }
+
+  Future<void> _saveLocalLogoBytes(List<int> bytes) async {
+    if (bytes.isEmpty) return;
+    final file = await _localLogoFile();
+    await file.writeAsBytes(bytes, flush: true);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('store_logo_path_${widget.brandId}', file.path);
+    if (mounted) setState(() => _localLogoPath = file.path);
+  }
+
+  Future<void> _cacheLogoFromUrl(String? logoUrl) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedPath = prefs.getString('store_logo_path_${widget.brandId}');
+    if (cachedPath != null && await File(cachedPath).exists()) {
+      if (mounted) setState(() => _localLogoPath = cachedPath);
+      return;
+    }
+
+    final cleanUrl = logoUrl?.trim() ?? '';
+    if (cleanUrl.isEmpty || !cleanUrl.startsWith('http')) return;
+
+    try {
+      final response = await http
+          .get(Uri.parse(cleanUrl))
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200 || response.bodyBytes.isEmpty) return;
+      await _saveLocalLogoBytes(response.bodyBytes);
+    } catch (_) {}
   }
 
   Future<CroppedFile?> _cropLogoImage(String sourcePath) {
@@ -203,6 +249,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
     if (!_isOwner || _isUploadingLogo) return;
 
     setState(() => _isUploadingLogo = true);
+    var localLogoSaved = false;
     try {
       final pickedFile = await ImagePicker().pickImage(
         source: ImageSource.gallery,
@@ -222,6 +269,9 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
       if (webpBytes == null || webpBytes.isEmpty) {
         throw 'แปลงโลโก้เป็น WebP ไม่สำเร็จ';
       }
+
+      await _saveLocalLogoBytes(webpBytes);
+      localLogoSaved = true;
 
       final request =
           http.MultipartRequest(
@@ -245,6 +295,9 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
 
       if (streamedResponse.statusCode != 200 ||
           responseData['success'] != true) {
+        debugPrint(
+          '[Store Logo] Cloud upload failed status=${streamedResponse.statusCode} body=$responseBody',
+        );
         throw responseData['error'] ??
             'อัปโหลดโลโก้ไม่สำเร็จ (${streamedResponse.statusCode})';
       }
@@ -260,6 +313,17 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
+        if (localLogoSaved) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'บันทึกโลโก้ในเครื่องแล้ว แต่ซิงก์ขึ้น Cloud ยังไม่สำเร็จ: $e',
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('อัปโหลดโลโก้ไม่สำเร็จ: $e'),
@@ -963,7 +1027,10 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
   }
 
   Widget _buildLogoPicker() {
-    final hasLogo = _logoUrl != null && _logoUrl!.trim().isNotEmpty;
+    final localLogo = _localLogoPath == null ? null : File(_localLogoPath!);
+    final hasLocalLogo = localLogo != null && localLogo.existsSync();
+    final hasLogo =
+        hasLocalLogo || (_logoUrl != null && _logoUrl!.trim().isNotEmpty);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -978,19 +1045,19 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
             border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
           child: hasLogo
-              ? Image.network(
-                  _logoUrl!,
+              ? hasLocalLogo
+                    ? Image.file(localLogo, fit: BoxFit.cover)
+                    : Image.network(
+                        _logoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'lib/assets/app_logo.png',
+                          fit: BoxFit.cover,
+                        ),
+                      )
+              : Image.asset(
+                  'lib/assets/app_logo.png',
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.storefront_rounded,
-                    color: Color(0xFF94A3B8),
-                    size: 42,
-                  ),
-                )
-              : const Icon(
-                  Icons.storefront_rounded,
-                  color: Color(0xFF94A3B8),
-                  size: 42,
                 ),
         ),
         const SizedBox(width: 18),

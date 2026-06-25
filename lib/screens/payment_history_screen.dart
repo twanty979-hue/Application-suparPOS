@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../api_service.dart';
 import 'package:Pos_Foodscan/services/storage_service.dart';
+import '../widgets/suparpos_loading.dart';
 
 class PaymentHistoryScreen extends StatefulWidget {
   const PaymentHistoryScreen({super.key});
@@ -17,10 +18,10 @@ class PaymentHistoryScreen extends StatefulWidget {
 class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   bool _isLoading = true;
   String? _errorMessage;
-  
+
   List<dynamic> _payments = [];
   List<dynamic> _coins = [];
-  
+
   String _activeSubTab = 'billing'; // 'billing' หรือ 'coins'
 
   @override
@@ -37,10 +38,11 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
     try {
       final token = await StorageService.getToken();
-      if (token == null || token.isEmpty) throw "เซสชันหมดอายุ กรุณาล็อกอินใหม่";
+      if (token == null || token.isEmpty)
+        throw "เซสชันหมดอายุ กรุณาล็อกอินใหม่";
 
       final response = await http.get(
-        Uri.parse(ApiService.paymentHistory), 
+        Uri.parse(ApiService.paymentHistory),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -70,7 +72,11 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   }
 
   String _formatCurrency(num amount) {
-    return NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 2).format(amount / 100);
+    return NumberFormat.currency(
+      locale: 'th_TH',
+      symbol: '฿',
+      decimalDigits: 2,
+    ).format(amount / 100);
   }
 
   String _formatCoins(num amount) {
@@ -97,8 +103,23 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ประวัติการทำรายการ', style: TextStyle(color: Color(0xFF1E293B), fontSize: 18, fontWeight: FontWeight.w900)),
-            Text('TRANSACTION LOGS & ACCREDITS', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+            Text(
+              'ประวัติการทำรายการ',
+              style: TextStyle(
+                color: Color(0xFF1E293B),
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            Text(
+              'TRANSACTION LOGS & ACCREDITS',
+              style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
           ],
         ),
         // --- 🌟 แถบสลับตัวเลือกประวัติชำระเงิน / ประวัติคอยน์ ---
@@ -135,17 +156,32 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SuparPosLoading(fullScreen: false)
           : _errorMessage != null
-              ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)))
-              : RefreshIndicator(
-                  onRefresh: _fetchHistoryData,
-                  child: _activeSubTab == 'billing' ? _buildPaymentList() : _buildCoinList(),
+          ? Center(
+              child: Text(
+                _errorMessage!,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _fetchHistoryData,
+              child: _activeSubTab == 'billing'
+                  ? _buildPaymentList()
+                  : _buildCoinList(),
+            ),
     );
   }
 
-  Widget _buildSubTabButton({required String title, required bool isActive, required IconData icon, required VoidCallback onTap}) {
+  Widget _buildSubTabButton({
+    required String title,
+    required bool isActive,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -153,14 +189,37 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         decoration: BoxDecoration(
           color: isActive ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          boxShadow: isActive ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))] : null,
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: isActive ? const Color(0xFF4F46E5) : const Color(0xFF64748B)),
+            Icon(
+              icon,
+              size: 16,
+              color: isActive
+                  ? const Color(0xFF4F46E5)
+                  : const Color(0xFF64748B),
+            ),
             const SizedBox(width: 6),
-            Text(title, style: TextStyle(color: isActive ? const Color(0xFF4F46E5) : const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w900)),
+            Text(
+              title,
+              style: TextStyle(
+                color: isActive
+                    ? const Color(0xFF4F46E5)
+                    : const Color(0xFF64748B),
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ],
         ),
       ),
@@ -169,7 +228,11 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
   // 💳 รายการบิลชำระเงิน
   Widget _buildPaymentList() {
-    if (_payments.isEmpty) return _buildEmptyState('ยังไม่มีประวัติการชำระเงิน', Icons.payment_rounded);
+    if (_payments.isEmpty)
+      return _buildEmptyState(
+        'ยังไม่มีประวัติการชำระเงิน',
+        Icons.payment_rounded,
+      );
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -191,12 +254,18 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isSuccess ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                  color: isSuccess
+                      ? const Color(0xFFECFDF5)
+                      : const Color(0xFFFEF2F2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isSuccess ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded,
-                  color: isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                  isSuccess
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.error_outline_rounded,
+                  color: isSuccess
+                      ? const Color(0xFF10B981)
+                      : const Color(0xFFEF4444),
                 ),
               ),
               const SizedBox(width: 14),
@@ -206,16 +275,30 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                   children: [
                     Text(
                       'แพ็กเกจ ${(bill['plan_detail'] ?? 'Premium Plan').toString().toUpperCase()}',
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF1E293B)),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        color: Color(0xFF1E293B),
+                      ),
                     ),
                     const SizedBox(height: 4),
-                    Text(_formatDate(bill['created_at']), style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                    Text(
+                      _formatDate(bill['created_at']),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
                   ],
                 ),
               ),
               Text(
                 _formatCurrency(bill['amount'] ?? 0),
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF0F172A),
+                ),
               ),
             ],
           ),
@@ -226,7 +309,11 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
   // 🎁 รายการประวัติ Coins
   Widget _buildCoinList() {
-    if (_coins.isEmpty) return _buildEmptyState('ยังไม่มีประวัติการใช้หรือเติม Coins', Icons.monetization_on_outlined);
+    if (_coins.isEmpty)
+      return _buildEmptyState(
+        'ยังไม่มีประวัติการใช้หรือเติม Coins',
+        Icons.monetization_on_outlined,
+      );
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -249,12 +336,18 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isEarned ? const Color(0xFFEFF6FF) : const Color(0xFFFFF7ED),
+                  color: isEarned
+                      ? const Color(0xFFEFF6FF)
+                      : const Color(0xFFFFF7ED),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isEarned ? Icons.add_card_rounded : Icons.shopping_bag_outlined,
-                  color: isEarned ? const Color(0xFF3B82F6) : const Color(0xFFF97316),
+                  isEarned
+                      ? Icons.add_card_rounded
+                      : Icons.shopping_bag_outlined,
+                  color: isEarned
+                      ? const Color(0xFF3B82F6)
+                      : const Color(0xFFF97316),
                   size: 20,
                 ),
               ),
@@ -264,24 +357,44 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      coinLog['action']?.toString().toUpperCase() ?? 'COIN TRANSACTION',
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF1E293B)),
+                      coinLog['action']?.toString().toUpperCase() ??
+                          'COIN TRANSACTION',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        color: Color(0xFF1E293B),
+                      ),
                     ),
                     if (coinLog['details'] != null) ...[
                       const SizedBox(height: 2),
-                      Text(coinLog['details'].toString(), style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                      Text(
+                        coinLog['details'].toString(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                     const SizedBox(height: 4),
-                    Text(_formatDate(coinLog['created_at']), style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                    Text(
+                      _formatDate(coinLog['created_at']),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
                   ],
                 ),
               ),
               Text(
                 '${isEarned ? '+' : ''}${_formatCoins(amount)}',
                 style: TextStyle(
-                  fontSize: 17, 
-                  fontWeight: FontWeight.w900, 
-                  color: isEarned ? const Color(0xFF2563EB) : const Color(0xFFEA580C)
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                  color: isEarned
+                      ? const Color(0xFF2563EB)
+                      : const Color(0xFFEA580C),
                 ),
               ),
             ],
@@ -298,7 +411,13 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         children: [
           Icon(icon, size: 64, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          Text(text, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -12,11 +14,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../api_service.dart';
 import 'package:Pos_Foodscan/services/storage_service.dart';
 import '../firebase_options.dart';
+import 'auto_print_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  DartPluginRegistrant.ensureInitialized();
+  await _ensureFirebaseInitialized();
   debugPrint('[FCM Background] ${message.data}');
+  await AutoPrintService.instance.handleRemoteMessage(message);
 }
 
 class AppNotificationService {
@@ -33,6 +38,7 @@ class AppNotificationService {
   static bool _ttsReady = false;
 
   static Future<void> initialize() async {
+    await _ensureFirebaseInitialized();
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
     final messaging = FirebaseMessaging.instance;
@@ -55,7 +61,8 @@ class AppNotificationService {
     _tokenSubscription = messaging.onTokenRefresh.listen(_saveFcmTokenToServer);
 
     await _messageSubscription?.cancel();
-    _messageSubscription = FirebaseMessaging.onMessage.listen((message) {
+    _messageSubscription = FirebaseMessaging.onMessage.listen((message) async {
+      await AutoPrintService.instance.handleRemoteMessage(message);
       _showForegroundNotification(message);
     });
 
@@ -71,21 +78,20 @@ class AppNotificationService {
 
   static Future<void> _saveFcmTokenToServer(String token) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
       final accessToken = await StorageService.getToken();
       if (accessToken == null || accessToken.isEmpty) return;
 
-      final baseUri = Uri.parse(ApiService.baseUrl);
-      final url =
-          "${baseUri.scheme}://${baseUri.host}:${baseUri.port}/api/update-fcm";
-
       final response = await http.post(
-        Uri.parse(url),
+        Uri.parse("${ApiService.baseUrl}/update-fcm"),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $accessToken',
         },
-        body: jsonEncode({'fcm_token': token}),
+        body: jsonEncode({
+          'fcm_token': token,
+          'platform': _devicePlatform(),
+          'device_label': _deviceLabel(),
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -94,6 +100,20 @@ class AppNotificationService {
     } catch (e) {
       debugPrint('[FCM] Token save failed: $e');
     }
+  }
+
+  static String _devicePlatform() {
+    if (Platform.isAndroid) return 'android';
+    if (Platform.isIOS) return 'ios';
+    if (Platform.isWindows) return 'windows';
+    if (Platform.isMacOS) return 'macos';
+    if (Platform.isLinux) return 'linux';
+    return Platform.operatingSystem;
+  }
+
+  static String? _deviceLabel() {
+    final label = Platform.localHostname.trim();
+    return label.isEmpty ? null : label;
   }
 
   static Future<void> _setupLocalNotifications() async {
@@ -126,7 +146,7 @@ class AppNotificationService {
 
   static void _showForegroundNotification(RemoteMessage message) {
     final type = message.data['type']?.toString();
-    if (type != 'NEW_ORDER' && type != 'ORDER_PAID') return;
+    if (type != 'NEW_ORDER') return;
 
     final title =
         message.notification?.title ??
@@ -184,7 +204,7 @@ class AppNotificationService {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final brandId = prefs.getString('saved_brand_id');
+      final brandId = await _currentBrandId(prefs);
       if (brandId != null) {
         final enabled =
             prefs.getBool('notification_voice_enabled_$brandId') ?? true;
@@ -208,7 +228,7 @@ class AppNotificationService {
   static Future<void> _playCustomSound() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final brandId = prefs.getString('saved_brand_id');
+      final brandId = await _currentBrandId(prefs);
       if (brandId == null) return;
 
       final enabled =
@@ -223,6 +243,17 @@ class AppNotificationService {
     }
   }
 
+  static Future<String?> _currentBrandId(SharedPreferences prefs) async {
+    final cachedBrandId = prefs.getString('startup_brand_id');
+    if (cachedBrandId != null && cachedBrandId.isNotEmpty) {
+      return cachedBrandId;
+    }
+
+    final secureBrandId = await StorageService.getBrandId();
+    if (secureBrandId.isNotEmpty) return secureBrandId;
+    return null;
+  }
+
   static Future<void> previewNotificationSound(String path) async {
     await _audioPlayer.stop();
     await _audioPlayer.play(DeviceFileSource(path));
@@ -233,4 +264,9 @@ class AppNotificationService {
     await _tts.stop();
     await _tts.speak('ทดสอบเสียงแจ้งเตือน มีออเดอร์ใหม่เข้ามา');
   }
+}
+
+Future<void> _ensureFirebaseInitialized() async {
+  if (Firebase.apps.isNotEmpty) return;
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }

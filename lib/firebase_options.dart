@@ -51,12 +51,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCv3vVikjwPi0ciUOrXMcX2DNISdo2DbMU',
-    appId: '1:322009039415:android:b450cde17c3c6a282d75b2',
-    messagingSenderId: '322009039415',
-    projectId: 'ecommer-e58e8',
-    databaseURL: 'https://ecommer-e58e8-default-rtdb.firebaseio.com',
-    storageBucket: 'ecommer-e58e8.firebasestorage.app',
+    apiKey: 'AIzaSyCxo0gMSjdfU1O54YIz2xsLPylbFyIFgKM',
+    appId: '1:690225929026:android:63ff8504957ca8780386db',
+    messagingSenderId: '690225929026',
+    projectId: 'pos-foodscan',
+    storageBucket: 'pos-foodscan.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(

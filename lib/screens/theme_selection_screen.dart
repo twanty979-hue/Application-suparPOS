@@ -3,7 +3,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../api_service.dart';
 import 'package:Pos_Foodscan/services/storage_service.dart';
 import '../widgets/app_sidebar.dart';
@@ -52,7 +51,6 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final prefs = await SharedPreferences.getInstance();
       final accessToken = await StorageService.getToken();
       final response = await http.get(
         Uri.parse(ApiService.themes),
@@ -109,7 +107,6 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
     setState(() => _applyingThemeId = themeId);
 
     try {
-      final prefs = await SharedPreferences.getInstance();
       final accessToken = await StorageService.getToken();
 
       final response = await http.post(
@@ -164,7 +161,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     final displayThemes = _themes.where((theme) {
-      final isExpired = theme['is_expired'] == true;
+      final isExpired = _isThemeExpired(theme);
       final mkt = theme['marketplace_themes'];
       final isMatchTab = _activeTab == 'active' ? !isExpired : isExpired;
       final isMatchCategory =
@@ -196,6 +193,20 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
         ),
       ),
     );
+  }
+
+  bool _isThemeExpired(dynamic theme) {
+    if (theme is! Map) return false;
+    if (theme['is_expired'] == true) return true;
+
+    final purchaseType = theme['purchase_type']?.toString();
+    if (purchaseType == 'lifetime') return false;
+
+    final rawDaysLeft = theme['days_left'];
+    final daysLeft = rawDaysLeft is num
+        ? rawDaysLeft.toInt()
+        : int.tryParse(rawDaysLeft?.toString() ?? '');
+    return daysLeft != null && daysLeft <= 0;
   }
 
   Widget _buildHeader() {
@@ -480,9 +491,10 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
     final isCurrent = themeMode == _currentThemeMode;
     final isLifetime = theme['purchase_type']?.toString() == 'lifetime';
     final isApplying = _applyingThemeId == themeId;
+    final isExpired = _isThemeExpired(theme);
     final imageUrl = _getImageUrl(mkt['image_url']?.toString());
 
-    return Column(
+    final card = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AspectRatio(
@@ -507,7 +519,9 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
         const SizedBox(height: 9),
         SizedBox(
           height: 22,
-          child: isCurrent
+          child: isExpired
+              ? _buildExpiredButton()
+              : isCurrent
               ? _buildCurrentButton()
               : _buildApplyButton(
                   isApplying: isApplying,
@@ -518,6 +532,16 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   onPressed: () => _applyTheme(themeId, slug, themeMode),
                 ),
         ),
+      ],
+    );
+
+    if (!isExpired) return card;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Opacity(opacity: 0.42, child: card),
+        const Positioned.fill(child: _ExpiredThemeOverlay()),
       ],
     );
   }
@@ -620,4 +644,85 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
       ),
     );
   }
+
+  Widget _buildExpiredButton() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE2E8F0),
+        border: Border.all(color: const Color(0xFFCBD5E1)),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Center(
+        child: Text(
+          'EXPIRED',
+          style: TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 7.5,
+            fontWeight: FontWeight.w900,
+            height: 1,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpiredThemeOverlay extends StatelessWidget {
+  const _ExpiredThemeOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: CustomPaint(
+        painter: _ExpiredThemePainter(),
+        child: Center(
+          child: Transform.rotate(
+            angle: -0.18,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B1730).withValues(alpha: 0.86),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.white, width: 1),
+              ),
+              child: const Text(
+                'EXPIRED',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.8,
+                  height: 1,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpiredThemePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFE11D48).withValues(alpha: 0.88)
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawLine(
+      const Offset(4, 4),
+      Offset(size.width - 4, size.height - 4),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - 4, 4),
+      Offset(4, size.height - 4),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

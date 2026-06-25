@@ -52,7 +52,7 @@ class _SuparPosLoadingState extends State<SuparPosLoading>
     );
 
     if (!widget.fullScreen) {
-      return Center(
+      return _ViewportCenteredLoading(
         child: Container(
           width: 132,
           height: 118,
@@ -107,6 +107,88 @@ class _SuparPosLoadingState extends State<SuparPosLoading>
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ViewportCenteredLoading extends StatefulWidget {
+  const _ViewportCenteredLoading({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_ViewportCenteredLoading> createState() =>
+      _ViewportCenteredLoadingState();
+}
+
+class _ViewportCenteredLoadingState extends State<_ViewportCenteredLoading> {
+  static const double _loaderHeight = 118;
+  final GlobalKey _areaKey = GlobalKey();
+  double _offsetY = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scheduleMeasure();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ViewportCenteredLoading oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scheduleMeasure();
+  }
+
+  void _scheduleMeasure() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
+  }
+
+  void _measure() {
+    if (!mounted) return;
+    final context = _areaKey.currentContext;
+    final renderObject = context?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) return;
+
+    final mediaQuery = MediaQuery.of(context!);
+    final top = renderObject.localToGlobal(Offset.zero).dy;
+    final height = renderObject.size.height;
+    final screenCenter =
+        mediaQuery.padding.top +
+        (mediaQuery.size.height -
+                mediaQuery.padding.top -
+                mediaQuery.padding.bottom) /
+            2;
+    final areaCenter = top + (height / 2);
+    final maxShift = math.max(0.0, (height - _loaderHeight) / 2);
+    final nextOffset = (screenCenter - areaCenter).clamp(-maxShift, maxShift);
+
+    if ((nextOffset - _offsetY).abs() > 0.5) {
+      setState(() => _offsetY = nextOffset);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _scheduleMeasure();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final loading = Center(
+          child: Transform.translate(
+            offset: Offset(0, _offsetY),
+            child: widget.child,
+          ),
+        );
+
+        if (constraints.hasBoundedHeight && constraints.maxHeight.isFinite) {
+          return SizedBox.expand(key: _areaKey, child: loading);
+        }
+
+        return SizedBox(
+          key: _areaKey,
+          width: double.infinity,
+          height: 180,
+          child: loading,
+        );
+      },
     );
   }
 }

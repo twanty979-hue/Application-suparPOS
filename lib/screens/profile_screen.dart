@@ -565,7 +565,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       drawer: const AppSidebar(activeMenu: 'profile'),
       body: SafeArea(
         child: _loading
-            ? const SuparPosLoading()
+            ? const SuparPosLoading(fullScreen: false)
             : RefreshIndicator(
                 onRefresh: _load,
                 child: SingleChildScrollView(

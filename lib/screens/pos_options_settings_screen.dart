@@ -31,11 +31,13 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
   bool _showProductImages = true;
   bool _showBarcodeProducts = true;
   bool _autoPrintIncomingOrders = false;
+  bool _showReceiptLogo = false;
   bool _notificationVoiceEnabled = true;
   bool _notificationSoundEnabled = true;
   String? _notificationSoundPath;
   int _receiptCopies = 1;
   String _tableQrMode = 'rotating';
+  bool _enableShiftMode = false;
 
   @override
   void initState() {
@@ -53,6 +55,8 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
           prefs.getBool('pos_show_barcode_products_${widget.brandId}') ?? true;
       _autoPrintIncomingOrders =
           prefs.getBool('auto_print_new_order_${widget.brandId}') ?? false;
+      _showReceiptLogo =
+          prefs.getBool('show_receipt_logo_${widget.brandId}') ?? false;
       _notificationVoiceEnabled =
           prefs.getBool('notification_voice_enabled_${widget.brandId}') ?? true;
       _notificationSoundEnabled =
@@ -63,6 +67,8 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
       _receiptCopies = 1;
       _tableQrMode =
           prefs.getString('table_qr_mode_${widget.brandId}') ?? 'rotating';
+      _enableShiftMode =
+          prefs.getBool('pos_enable_shift_mode_${widget.brandId}') ?? false;
     });
 
     final dbSettings = await DatabaseHelper.instance.getPrinterSettings(
@@ -75,6 +81,12 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
     if (!mounted) return;
     setState(() => _receiptCopies = savedCopies <= 1 ? 1 : 2);
     await _fetchTableQrMode();
+  }
+
+  Future<void> _setEnableShiftMode(bool value) async {
+    setState(() => _enableShiftMode = value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('pos_enable_shift_mode_${widget.brandId}', value);
   }
 
   Future<void> _fetchTableQrMode() async {
@@ -117,6 +129,12 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
     setState(() => _autoPrintIncomingOrders = value);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('auto_print_new_order_${widget.brandId}', value);
+  }
+
+  Future<void> _setShowReceiptLogo(bool value) async {
+    setState(() => _showReceiptLogo = value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('show_receipt_logo_${widget.brandId}', value);
   }
 
   Future<void> _setTableQrMode(String mode) async {
@@ -282,6 +300,28 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
                             _buildTableQrModeCard(),
                             const SizedBox(height: 14),
                             _buildReceiptCopiesCard(),
+                            const SizedBox(height: 14),
+                            _buildOptionCard(
+                              icon: Icons.account_balance_wallet_outlined,
+                              iconColor: Colors.deepOrange,
+                              iconBg: const Color(0xFFFFF3E0),
+                              title: 'โหมดเปิด-ปิดกะ (Shift Control)',
+                              subtitle:
+                                  'เปิดเพื่อบันทึกกะทำงานของพนักงาน ตรวจสอบเงินทอนเริ่มต้น และกระทบยอดปิดเครื่องเงินสด',
+                              value: _enableShiftMode,
+                              onChanged: _setEnableShiftMode,
+                            ),
+                            const SizedBox(height: 14),
+                            _buildOptionCard(
+                              icon: Icons.storefront_rounded,
+                              iconColor: const Color(0xFF0891B2),
+                              iconBg: const Color(0xFFE0F7FA),
+                              title: 'แสดงโลโก้บนใบเสร็จ',
+                              subtitle:
+                                  'ถ้าไม่มีโลโก้ร้าน ระบบจะใช้โลโก้แอป SuparPOS แทน',
+                              value: _showReceiptLogo,
+                              onChanged: _setShowReceiptLogo,
+                            ),
                             const SizedBox(height: 14),
                             _buildNotificationSettingsCard(),
                           ],

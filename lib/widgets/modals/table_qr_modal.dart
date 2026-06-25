@@ -45,7 +45,7 @@ class TableQrModal extends StatefulWidget {
 
     return showDialog(
       context: context,
-      barrierColor: Colors.black87.withOpacity(0.7),
+      barrierColor: Colors.black87.withValues(alpha: 0.7),
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 20),
@@ -189,7 +189,7 @@ class _TableQrModalState extends State<TableQrModal> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -212,6 +212,8 @@ class _TableQrModalState extends State<TableQrModal> {
   }
 
   Widget _buildPasscodeCard() {
+    if (_isStaticQr) return const SizedBox.shrink();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -221,9 +223,9 @@ class _TableQrModalState extends State<TableQrModal> {
       ),
       child: Column(
         children: [
-          Text(
-            _isStaticQr ? 'QR MODE' : 'TABLE PASSCODE',
-            style: const TextStyle(
+          const Text(
+            'TABLE PASSCODE',
+            style: TextStyle(
               color: Color(0xFF94A3B8),
               fontSize: 10,
               fontWeight: FontWeight.w900,
@@ -232,9 +234,7 @@ class _TableQrModalState extends State<TableQrModal> {
           ),
           const SizedBox(height: 8),
           Text(
-            _isStaticQr
-                ? 'STATIC TABLE QR'
-                : _previewToken.split('').join('  '),
+            _previewToken.split('').join('  '),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xFF0F172A),
@@ -274,55 +274,27 @@ class _TableQrModalState extends State<TableQrModal> {
           ),
         ],
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.open_in_new,
-                  size: 16,
-                  color: Color(0xFF64748B),
-                ),
-                label: const Text(
-                  'ทดสอบ',
-                  style: TextStyle(
-                    color: Color(0xFF475569),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: Color(0xFFE2E8F0)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _printTokens([_previewToken]),
+            icon: const Icon(Icons.print, size: 16, color: Colors.white),
+            label: const Text(
+              'พิมพ์ใบนี้',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _printTokens([_previewToken]),
-                icon: const Icon(Icons.print, size: 16, color: Colors.white),
-                label: const Text(
-                  'พิมพ์ใบนี้',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F172A),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0F172A),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
+              elevation: 0,
             ),
-          ],
+          ),
         ),
       ],
     );
@@ -577,7 +549,7 @@ class _TableQrModalState extends State<TableQrModal> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
