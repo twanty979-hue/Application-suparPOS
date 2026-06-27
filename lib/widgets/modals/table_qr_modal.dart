@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
+import 'dart:ui';
 
 import '../../api_service.dart';
 import '../../theme/app_colors.dart';
@@ -46,7 +47,9 @@ class TableQrModal extends StatefulWidget {
     return showDialog(
       context: context,
       barrierColor: Colors.black87.withValues(alpha: 0.7),
-      builder: (context) => Dialog(
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 20),
         child: TableQrModal(
@@ -59,6 +62,7 @@ class TableQrModal extends StatefulWidget {
               ? tokens
               : [if (fallback.isNotEmpty) fallback],
         ),
+      ),
       ),
     );
   }
@@ -134,8 +138,8 @@ class _TableQrModalState extends State<TableQrModal> {
       if (tokens.isEmpty) throw Exception('No tokens returned');
 
       setState(() {
-        _activeTokens = tokens;
-        _mainToken = tokens.first;
+        _activeTokens = _uniqueTokens([..._activeTokens, ...tokens]);
+        _mainToken = _activeTokens.first;
       });
     } catch (e) {
       if (!mounted) return;
@@ -253,10 +257,8 @@ class _TableQrModalState extends State<TableQrModal> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildQrCard(),
-        const SizedBox(height: 24),
-        _buildPasscodeCard(),
         if (!_isStaticQr) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -313,7 +315,7 @@ class _TableQrModalState extends State<TableQrModal> {
           side: BorderSide(
             color: active ? const Color(0xFF0F172A) : Colors.transparent,
           ),
-          padding: const EdgeInsets.symmetric(vertical: 13),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -331,107 +333,112 @@ class _TableQrModalState extends State<TableQrModal> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            OutlinedButton(
-              onPressed: () => setState(() => _multiMode = false),
-              style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('กลับ'),
-            ),
-            const Spacer(),
-            Text(
-              'QR ทั้งหมด (${_activeTokens.length})',
-              style: const TextStyle(
-                color: AppColors.slate400,
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.white,
             border: Border.all(color: const Color(0xFFE2E8F0)),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'ต้องการสร้างกี่ใบ',
-                style: TextStyle(
-                  color: AppColors.slate400,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 10),
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildCountButton(1),
-                  const SizedBox(width: 8),
-                  _buildCountButton(4),
-                  const SizedBox(width: 8),
-                  _buildCountButton(5),
-                  const SizedBox(width: 8),
-                  _buildCountButton(10),
-                ],
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'จำนวนอื่น สูงสุด 50',
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                onChanged: (value) {
-                  final parsed = int.tryParse(value) ?? _printCount;
-                  setState(() => _printCount = parsed.clamp(1, 50));
-                },
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isGenerating ? null : _generateTokens,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.blue600,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    _isGenerating
-                        ? 'กำลังสร้าง...'
-                        : 'สร้างชุดใหม่ $_printCount ใบ',
-                    style: const TextStyle(
-                      color: Colors.white,
+                  const Text(
+                    'จำนวน',
+                    style: TextStyle(
+                      color: AppColors.slate700,
+                      fontSize: 12,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                ),
+                  TextButton(
+                    onPressed: () {
+                      if (_activeTokens.isNotEmpty) {
+                        setState(() {
+                          _activeTokens = [_activeTokens.first];
+                          _mainToken = _activeTokens.first;
+                        });
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('รีเซ็ตเหลือ 1', style: TextStyle(color: AppColors.rose500, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildCountButton(1),
+                  const SizedBox(width: 6),
+                  _buildCountButton(4),
+                  const SizedBox(width: 6),
+                  _buildCountButton(5),
+                  const SizedBox(width: 6),
+                  _buildCountButton(10),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: 'ระบุ...',
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      onChanged: (value) {
+                        final parsed = int.tryParse(value) ?? _printCount;
+                        setState(() => _printCount = parsed.clamp(1, 50));
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: _isGenerating ? null : _generateTokens,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.blue600,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        _isGenerating
+                            ? 'กำลังสร้าง...'
+                            : 'สร้าง $_printCount ใบ',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         Container(
-          constraints: const BoxConstraints(maxHeight: 170),
+          constraints: const BoxConstraints(maxHeight: 140),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: const Color(0xFFF8FAFC),
@@ -467,11 +474,10 @@ class _TableQrModalState extends State<TableQrModal> {
                     ),
                   ),
                   child: Text(
-                    token,
+                    'ใบที่ ${index + 1}',
                     style: TextStyle(
                       color: active ? Colors.white : AppColors.slate700,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
                     ),
                   ),
                 ),
@@ -496,7 +502,7 @@ class _TableQrModalState extends State<TableQrModal> {
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.emerald500,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -529,7 +535,24 @@ class _TableQrModalState extends State<TableQrModal> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const SizedBox(width: 40),
+                _multiMode && !_isStaticQr
+                    ? InkWell(
+                        onTap: () => setState(() => _multiMode = false),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      )
+                    : const SizedBox(width: 36),
                 Expanded(
                   child: Text(
                     'โต๊ะ: ${widget.tableLabel}',

@@ -49,12 +49,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _hasShownSyncDialog = false;
 
   // Filter & UI States
-  String _viewMode = 'custom'; // เปิดครั้งแรกเป็นช่วง 30 วันล่าสุด
+  String _viewMode = 'last7days'; // เปลี่ยน default ให้เป็น 7 วัน
   DateTime _currentDate = DateTime.now();
-  DateTimeRange? _customDateRange = DateTimeRange(
-    start: DateTime.now().subtract(const Duration(days: 29)),
-    end: DateTime.now(),
-  );
+  DateTimeRange? _customDateRange;
 
   int _selectedBottomTab = 0; // 0 = กราฟรายได้, 1 = เมนูขายดี
 
@@ -67,27 +64,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Map<String, String> _getDateRange() {
     DateTime start, end;
-    if (_viewMode == 'day') {
-      start = DateTime(_currentDate.year, _currentDate.month, _currentDate.day);
-      end = DateTime(
-        _currentDate.year,
-        _currentDate.month,
-        _currentDate.day,
-        23,
-        59,
-        59,
-      );
-    } else if (_viewMode == 'month') {
-      start = DateTime(_currentDate.year, _currentDate.month, 1);
-      end = DateTime(_currentDate.year, _currentDate.month + 1, 0, 23, 59, 59);
-    } else if (_viewMode == 'year') {
-      start = DateTime(_currentDate.year, 1, 1);
-      end = DateTime(_currentDate.year, 12, 31, 23, 59, 59);
+    final now = DateTime.now();
+    
+    if (_viewMode == 'today') {
+      start = DateTime(now.year, now.month, now.day);
+      end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    } else if (_viewMode == 'yesterday') {
+      final y = now.subtract(const Duration(days: 1));
+      start = DateTime(y.year, y.month, y.day);
+      end = DateTime(y.year, y.month, y.day, 23, 59, 59);
+    } else if (_viewMode == 'last7days') {
+      start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
+      end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    } else if (_viewMode == 'last30days') {
+      start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29));
+      end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    } else if (_viewMode == 'thisMonth') {
+      start = DateTime(now.year, now.month, 1);
+      end = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+    } else if (_viewMode == 'lastMonth') {
+      start = DateTime(now.year, now.month - 1, 1);
+      end = DateTime(now.year, now.month, 0, 23, 59, 59);
     } else {
-      start =
-          _customDateRange?.start ??
-          DateTime.now().subtract(const Duration(days: 7));
-      end = _customDateRange?.end ?? DateTime.now();
+      // custom
+      start = _customDateRange?.start ?? DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29));
+      end = _customDateRange?.end ?? now;
       end = DateTime(end.year, end.month, end.day, 23, 59, 59);
     }
     return {
@@ -457,23 +458,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final now = DateTime.now();
     final isFreePlan = _effectivePlan == 'free';
     final firstAllowedDate = isFreePlan
-        ? DateTime(
-            now.year,
-            now.month,
-            now.day,
-          ).subtract(const Duration(days: 29))
+        ? DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29))
         : DateTime(2020);
-    final currentRange =
-        _customDateRange ??
-        DateTimeRange(start: now.subtract(const Duration(days: 29)), end: now);
-    final initialEnd = currentRange.end.isBefore(firstAllowedDate)
-        ? now
-        : (currentRange.end.isAfter(now) ? now : currentRange.end);
-    final initialRange = DateTimeRange(
-      start: currentRange.start.isBefore(firstAllowedDate)
-          ? firstAllowedDate
-          : currentRange.start,
-      end: initialEnd,
+        
+    final initialRange = _customDateRange ?? DateTimeRange(
+      start: now.subtract(const Duration(days: 7)),
+      end: now,
     );
 
     final DateTimeRange? picked = await showDateRangePicker(
@@ -487,7 +477,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(
-            primary: Color(0xFF0F172A),
+            primary: Color(0xFF4F46E5), // เปลี่ยนสีหลักให้เข้ากับตีม
             onPrimary: Colors.white,
             onSurface: Color(0xFF0F172A),
           ),
@@ -505,6 +495,153 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  // 🌟 โมดูลสำหรับเลือกวันที่แบบละเอียด สวยงาม และใช้งานง่าย
+  void _showAdvancedDatePicker() {
+    final isFreePlan = _effectivePlan == 'free';
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          padding: const EdgeInsets.only(top: 12, bottom: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month_rounded, color: Color(0xFF4F46E5), size: 22),
+                    SizedBox(width: 10),
+                    Text(
+                      'เลือกช่วงเวลา',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      _buildDateOption('วันนี้', 'today', Icons.today_rounded),
+                      _buildDateOption('เมื่อวาน', 'yesterday', Icons.turn_left_rounded),
+                      _buildDateOption('7 วันล่าสุด', 'last7days', Icons.view_week_rounded),
+                      _buildDateOption('30 วันล่าสุด', 'last30days', Icons.date_range_rounded),
+                      const Divider(color: Color(0xFFF1F5F9), height: 24, thickness: 1.5),
+                      _buildDateOption('เดือนนี้', 'thisMonth', Icons.calendar_view_month_rounded),
+                      _buildDateOption('เดือนที่แล้ว', 'lastMonth', Icons.history_rounded, isLocked: isFreePlan),
+                      const Divider(color: Color(0xFFF1F5F9), height: 24, thickness: 1.5),
+                      ListTile(
+                        onTap: () {
+                          Navigator.pop(context);
+                          _selectCustomDateRange();
+                        },
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.edit_calendar_rounded, size: 20, color: Color(0xFF475569)),
+                        ),
+                        title: const Text(
+                          'เลือกตามช่วงเวลา (Custom)',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                        trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDateOption(String title, String value, IconData icon, {bool isLocked = false}) {
+    final bool isSelected = _viewMode == value;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: ListTile(
+        onTap: () {
+          if (isLocked) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('กรุณาอัปเกรดเป็น PRO เพื่อดูข้อมูลย้อนหลังเกิน 30 วัน'))
+            );
+            return;
+          }
+          Navigator.pop(context); // ปิด Modal
+          if (_viewMode != value) {
+            setState(() {
+              _viewMode = value;
+            });
+            _fetchDashboardData();
+          }
+        },
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        tileColor: isSelected ? const Color(0xFFEEF2FF) : Colors.transparent,
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF4F46E5) : (isLocked ? const Color(0xFFF8FAFC) : const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            isLocked ? Icons.lock_outline_rounded : icon,
+            size: 20,
+            color: isSelected ? Colors.white : (isLocked ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
+          ),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+            color: isSelected ? const Color(0xFF4F46E5) : (isLocked ? const Color(0xFF94A3B8) : const Color(0xFF334155)),
+          ),
+        ),
+        trailing: isLocked 
+          ? const Icon(Icons.workspace_premium_rounded, color: Color(0xFFF59E0B), size: 18) 
+          : (isSelected
+            ? const Icon(Icons.check_circle_rounded, color: Color(0xFF4F46E5))
+            : null),
+      ),
+    );
+  }
+
   String _formatCurrency(dynamic amount) {
     double val = double.tryParse(amount?.toString() ?? '0') ?? 0.0;
     return NumberFormat.currency(
@@ -520,32 +657,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   String _formatDateShort() {
-    const thMonths = [
-      'ม.ค.',
-      'ก.พ.',
-      'มี.ค.',
-      'เม.ย.',
-      'พ.ค.',
-      'มิ.ย.',
-      'ก.ค.',
-      'ส.ค.',
-      'ก.ย.',
-      'ต.ค.',
-      'พ.ย.',
-      'ธ.ค.',
-    ];
-    final yearStr = DateFormat(
-      'yy',
-    ).format(_currentDate); // Format ปี 2 หลัก เช่น "26"
+    if (_viewMode == 'today') return 'วันนี้';
+    if (_viewMode == 'yesterday') return 'เมื่อวาน';
+    if (_viewMode == 'last7days') return '7 วันล่าสุด';
+    if (_viewMode == 'last30days') return '30 วันล่าสุด';
+    if (_viewMode == 'thisMonth') return 'เดือนนี้';
+    if (_viewMode == 'lastMonth') return 'เดือนที่แล้ว';
 
-    if (_viewMode == 'day')
-      return "${_currentDate.day} ${thMonths[_currentDate.month - 1]} $yearStr";
-    if (_viewMode == 'month')
-      return "เดือน ${thMonths[_currentDate.month - 1]} $yearStr";
-    if (_viewMode == 'year') return "ปี ${_currentDate.year + 543}";
+    const thMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
     if (_customDateRange != null) {
       final s = _customDateRange!.start;
       final e = _customDateRange!.end;
+      // ถ้าเลือกวันเดียวกัน
+      if (s.year == e.year && s.month == e.month && s.day == e.day) {
+        return "${s.day} ${thMonths[s.month - 1]} ${(s.year + 543).toString().substring(2)}";
+      }
+      // ถ้าเลือกข้ามวัน
       return "${s.day} ${thMonths[s.month - 1]} - ${e.day} ${thMonths[e.month - 1]}";
     }
     return "ช่วงเวลานี้";
@@ -738,7 +865,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           OutlinedButton(
-            onPressed: () => _selectCustomDateRange(),
+            onPressed: () => _showAdvancedDatePicker(),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               side: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -749,7 +876,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             child: const Row(
               children: [
-                Icon(Icons.calendar_today_outlined, size: 16),
+                Icon(Icons.calendar_month_rounded, size: 16, color: Color(0xFF4F46E5)),
                 SizedBox(width: 6),
                 Icon(Icons.keyboard_arrow_down_rounded, size: 18),
               ],
@@ -783,11 +910,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         children: [
           Expanded(
-            child: _buildCompactMetric(
-              title: 'ยอดขาย',
-              value: _formatCurrency(totalRevenue),
-              icon: Icons.trending_up_rounded,
-              color: const Color(0xFF4F46E5),
+            child: GestureDetector(
+              onTap: _unsyncedCount > 0 ? _showOfflineSyncModal : null,
+              behavior: HitTestBehavior.opaque,
+              child: _buildCompactMetric(
+                title: 'ยอดขาย',
+                value: _formatCurrency(totalRevenue),
+                icon: Icons.trending_up_rounded,
+                color: const Color(0xFF4F46E5),
+                isAnimating: _unsyncedCount > 0,
+              ),
             ),
           ),
           _buildMetricDivider(),
@@ -827,6 +959,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String value,
     required IconData icon,
     required Color color,
+    bool isAnimating = false,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -838,7 +971,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(9),
           ),
-          child: Icon(icon, size: 16, color: color),
+          child: isAnimating
+              ? WigglingSyncIcon(icon: icon, color: color)
+              : Icon(icon, size: 16, color: color),
         ),
         const SizedBox(height: 7),
         Text(
@@ -952,7 +1087,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onTap: () => setState(() => _selectedBottomTab = index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: isActive
               ? const Color(0xFF0F172A)
@@ -964,16 +1099,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Icon(
               icon,
-              size: 18,
+              size: 16,
               color: isActive
                   ? Colors.white
                   : (iconColor ?? const Color(0xFF94A3B8)),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(
               title,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w800,
                 color: isActive ? Colors.white : const Color(0xFF94A3B8),
               ),
@@ -984,30 +1119,101 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  int? _selectedChartIndex;
+
+  String _formatDateFriendly(String dateStr) {
+    if (dateStr.isEmpty) return '';
+    try {
+      final d = DateTime.parse(dateStr);
+      final thMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+      return '${d.day} ${thMonths[d.month - 1]} ${d.year + 543}';
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  void _updateChartSelection(double dx, double width, int length) {
+    if (length <= 1) return;
+    final stepX = width / (length - 1);
+    int index = (dx / stepX).round();
+    if (index < 0) index = 0;
+    if (index >= length) index = length - 1;
+    if (_selectedChartIndex != index) {
+      setState(() {
+        _selectedChartIndex = index;
+      });
+    }
+  }
+
   // --- กราฟ Smooth Line ---
   Widget _buildChartSection() {
     List<double> values = [];
+    List<String> dates = [];
     if (_chartData.isNotEmpty) {
       for (var day in _chartData) {
         values.add(
           double.tryParse(day['total_revenue']?.toString() ?? '0') ?? 0,
         );
+        dates.add(day['report_date']?.toString() ?? day['date']?.toString() ?? day['day']?.toString() ?? day['created_at']?.toString() ?? 'Keys: ${day.keys.join(', ')}');
       }
     } else {
       // Dummy data if empty so the UI doesn't look blank
       values = [0, 0, 0, 200, 1800, 400, 2200, 800, 0, 0, 0, 0];
+      dates = List.generate(12, (index) => '2023-01-${(index + 1).toString().padLeft(2, '0')}');
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       key: const ValueKey('chart_section'),
       children: [
-        SizedBox(
-          height: 220,
-          width: double.infinity,
-          child: CustomPaint(painter: SmoothLineChartPainter(values: values)),
+        if (_selectedChartIndex != null && _selectedChartIndex! < values.length)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEEF2FF),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE0E7FF)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today_rounded, size: 14, color: Color(0xFF4F46E5)),
+                    const SizedBox(width: 6),
+                    Text(
+                      _formatDateFriendly(dates[_selectedChartIndex!]),
+                      style: const TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
+                ),
+                Text(
+                  _formatCurrency(values[_selectedChartIndex!]),
+                  style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return GestureDetector(
+              onPanUpdate: (details) => _updateChartSelection(details.localPosition.dx, constraints.maxWidth, values.length),
+              onTapDown: (details) => _updateChartSelection(details.localPosition.dx, constraints.maxWidth, values.length),
+              child: SizedBox(
+                height: 160,
+                width: double.infinity,
+                child: CustomPaint(
+                  painter: SmoothLineChartPainter(
+                    values: values,
+                    selectedIndex: _selectedChartIndex,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -1015,15 +1221,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               '1',
               style: TextStyle(
                 color: Color(0xFF94A3B8),
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const Text(
-              '16',
+              '15',
               style: TextStyle(
                 color: Color(0xFF94A3B8),
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1031,7 +1237,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               '${DateTime(_currentDate.year, _currentDate.month + 1, 0).day}',
               style: const TextStyle(
                 color: Color(0xFF94A3B8),
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1046,12 +1252,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_topProducts.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(24.0),
           child: Text(
             'ยังไม่มีข้อมูลเมนูขายดี',
             style: TextStyle(
               color: Colors.grey[400],
               fontWeight: FontWeight.bold,
+              fontSize: 13,
             ),
           ),
         ),
@@ -1060,17 +1267,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Container(
       key: const ValueKey('products_section'),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEFF2F6)),
       ),
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _topProducts.length,
         separatorBuilder: (context, index) =>
-            const Divider(height: 24, color: Color(0xFFF1F5F9)),
+            const Divider(height: 16, color: Color(0xFFF1F5F9)),
         itemBuilder: (context, index) {
           final product = _topProducts[index];
           double pRev =
@@ -1078,8 +1286,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 26,
+                height: 26,
                 decoration: BoxDecoration(
                   color: index == 0
                       ? const Color(0xFFFEF08A)
@@ -1093,6 +1301,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     '${index + 1}',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
+                      fontSize: 12,
                       color: index == 0
                           ? const Color(0xFFCA8A04)
                           : const Color(0xFF475569),
@@ -1100,13 +1309,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   product['name'],
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
-                    fontSize: 14,
+                    fontSize: 13,
                     color: Color(0xFF0F172A),
                   ),
                 ),
@@ -1118,7 +1327,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _formatCurrency(pRev),
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
-                      fontSize: 14,
+                      fontSize: 13,
                       color: Color(0xFF0F172A),
                     ),
                   ),
@@ -1126,7 +1335,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     '${product['qty']} ชิ้น',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: 11,
+                      fontSize: 10,
                       color: Color(0xFF94A3B8),
                     ),
                   ),
@@ -2013,8 +2222,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // 🎨 Custom Painter สำหรับวาดกราฟเส้นโค้ง (Smooth Spline Chart) คล้ายในดีไซน์
 class SmoothLineChartPainter extends CustomPainter {
   final List<double> values;
+  final int? selectedIndex;
 
-  SmoothLineChartPainter({required this.values});
+  SmoothLineChartPainter({required this.values, this.selectedIndex});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -2075,14 +2285,33 @@ class SmoothLineChartPainter extends CustomPainter {
 
     // วาดเส้นกราฟสีม่วงๆ คมๆ
     final linePaint = Paint()
-      ..color =
-          const Color(0xFF6366F1) // สีม่วงอมฟ้าตามดีไซน์
+      ..color = const Color(0xFF6366F1) // สีม่วงอมฟ้าตามดีไซน์
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
+      ..strokeWidth = 3.0 // ปรับให้บางลง
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
     canvas.drawPath(path, linePaint);
+
+    // วาดจุดที่เลือก (Selected Point)
+    if (selectedIndex != null && selectedIndex! >= 0 && selectedIndex! < points.length) {
+      final p = points[selectedIndex!];
+      
+      final vLinePaint = Paint()
+        ..color = const Color(0xFF6366F1).withOpacity(0.3)
+        ..strokeWidth = 1.5
+        ..style = PaintingStyle.stroke;
+      canvas.drawLine(Offset(p.dx, 0), Offset(p.dx, size.height), vLinePaint);
+
+      final dotPaint = Paint()..color = Colors.white;
+      final dotBorderPaint = Paint()
+        ..color = const Color(0xFF6366F1)
+        ..strokeWidth = 2.5
+        ..style = PaintingStyle.stroke;
+
+      canvas.drawCircle(p, 5, dotPaint);
+      canvas.drawCircle(p, 5, dotBorderPaint);
+    }
 
     // --- วาดเส้นไกด์แนวนอน ---
     final gridPaint = Paint()
@@ -2122,4 +2351,51 @@ class SmoothLineChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class WigglingSyncIcon extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  const WigglingSyncIcon({super.key, required this.icon, required this.color});
+
+  @override
+  State<WigglingSyncIcon> createState() => _WigglingSyncIconState();
+}
+
+class _WigglingSyncIconState extends State<WigglingSyncIcon> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        // วิ่งๆ หยุดๆ: 0-0.2: สั่น, 0.2-1.0: หยุด
+        double angle = 0.0;
+        if (_controller.value < 0.2) {
+          angle = math.sin(_controller.value * 100) * 0.4;
+        }
+        return Transform.rotate(
+          angle: angle,
+          child: child,
+        );
+      },
+      child: Icon(widget.icon, size: 16, color: widget.color),
+    );
+  }
 }

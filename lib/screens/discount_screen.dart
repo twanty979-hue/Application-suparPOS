@@ -344,12 +344,19 @@ class _DiscountScreenState extends State<DiscountScreen> {
       key: _scaffoldKey,
       backgroundColor: const Color(0xFFFAFAFA),
       drawer: const AppSidebar(activeMenu: 'discount'),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openAddDiscountModal,
-        backgroundColor: const Color(0xFF0F172A),
-        elevation: 8,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+      floatingActionButton: SizedBox(
+        width: 44,
+        height: 44,
+        child: FloatingActionButton(
+          onPressed: _openAddDiscountModal,
+          backgroundColor: const Color(0xFF0F172A),
+          foregroundColor: Colors.white,
+          elevation: 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(Icons.add_rounded, size: 26),
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -369,57 +376,56 @@ class _DiscountScreenState extends State<DiscountScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF97316), Color(0xFFEF4444)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, color: Color(0xFF94A3B8), size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          onChanged: (value) => setState(() => _searchQuery = value),
+                          style: const TextStyle(fontSize: 12),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(vertical: 8),
+                            hintText: 'ค้นหาโปรโมชัน...',
+                            hintStyle: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 11,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFF97316).withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.sell_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'โปรโมชัน & ส่วนลด',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'จัดการแคมเปญลดราคาเพื่อกระตุ้นยอดขาย',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF64748B).withOpacity(0.8),
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 12),
+          // แถบสลับ Filter
+          Row(
+            children: [
+              _buildFilterButton('ทั้งหมด', 'all'),
+              const SizedBox(width: 8),
+              _buildFilterButton('ทั้งร้าน', 'store'),
+              const SizedBox(width: 8),
+              _buildFilterButton('เฉพาะเมนู', 'specific'),
+            ],
           ),
         ],
       ),
@@ -465,67 +471,6 @@ class _DiscountScreenState extends State<DiscountScreen> {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          // 🌟 Search & Filter แถบสลับเมนู (เอาคืนมาให้แล้วครับ)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Column(
-                children: [
-                  // แถบค้นหา
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: TextField(
-                            onChanged: (value) =>
-                                setState(() => _searchQuery = value),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            decoration: const InputDecoration(
-                              hintText: 'ค้นหาโปรโมชัน...',
-                              hintStyle: TextStyle(
-                                color: Color(0xFF94A3B8),
-                                fontWeight: FontWeight.w600,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.search_rounded,
-                                color: Color(0xFF94A3B8),
-                                size: 20,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // แถบสลับ Filter (Segmented Control)
-                  Row(
-                    children: [
-                      _buildFilterButton('ทั้งหมด', 'all'),
-                      const SizedBox(width: 8),
-                      _buildFilterButton('ทั้งร้าน', 'store'),
-                      const SizedBox(width: 8),
-                      _buildFilterButton('เฉพาะเมนู', 'specific'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
           if (discounts.isEmpty)
             SliverFillRemaining(
               child: _buildEmptyState(
@@ -544,13 +489,13 @@ class _DiscountScreenState extends State<DiscountScreen> {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
               sliver: SliverGrid(
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 220,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  mainAxisExtent: 260,
+                  maxCrossAxisExtent: 130, // 130 เพื่อให้กว้างพอแสดงข้อความ
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  mainAxisExtent: 164, // สูง 164
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) => _buildDiscountCard(filtered[index]),
@@ -611,17 +556,17 @@ class _DiscountScreenState extends State<DiscountScreen> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(10), // ลด padding
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: isStoreWide
                     ? const Color(0xFFEFF6FF)
                     : const Color(0xFFF3E8FF),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 isStoreWide ? 'ทั้งร้าน' : 'บางเมนู',
@@ -629,33 +574,34 @@ class _DiscountScreenState extends State<DiscountScreen> {
                   color: isStoreWide
                       ? const Color(0xFF2563EB)
                       : const Color(0xFF9333EA),
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: FontWeight.w900,
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
 
             Text(
               itemName,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 12, // เล็กลง
                 fontWeight: FontWeight.w900,
                 color: Color(0xFF0F172A),
+                height: 1.2,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
 
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.end, // ชิดล่าง
               children: [
                 if (!isPercent)
                   const Text(
                     '฿',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 12,
                       fontWeight: FontWeight.w900,
                       color: Color(0xFFEA580C),
                       height: 1.2,
@@ -664,18 +610,18 @@ class _DiscountScreenState extends State<DiscountScreen> {
                 Text(
                   valueStr,
                   style: const TextStyle(
-                    fontSize: 32,
+                    fontSize: 20, // เล็กลง
                     fontWeight: FontWeight.w900,
                     color: Color(0xFFEA580C),
                     height: 1,
-                    letterSpacing: -1,
+                    letterSpacing: -0.5,
                   ),
                 ),
                 if (isPercent)
                   const Text(
                     '%',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 12,
                       fontWeight: FontWeight.w900,
                       color: Color(0xFFEA580C),
                       height: 1.2,
@@ -687,26 +633,26 @@ class _DiscountScreenState extends State<DiscountScreen> {
             const Spacer(),
 
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
                 children: [
                   const Icon(
                     Icons.calendar_today_outlined,
-                    size: 12,
+                    size: 10,
                     color: Color(0xFF64748B),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       _dateRangeLabel(item),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 9,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF334155),
                       ),
@@ -715,23 +661,23 @@ class _DiscountScreenState extends State<DiscountScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
 
             SizedBox(
               width: double.infinity,
-              height: 36,
+              height: 28,
               child: OutlinedButton.icon(
                 onPressed: () => _deleteDiscount(itemId),
-                icon: const Icon(Icons.delete_outline_rounded, size: 14),
-                label: const Text('ลบ'),
+                icon: const Icon(Icons.delete_outline_rounded, size: 12),
+                label: const Text('ลบ', style: TextStyle(fontSize: 11)),
                 style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.zero,
                   foregroundColor: const Color(0xFF64748B),
                   side: const BorderSide(color: Color(0xFFE2E8F0)),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   textStyle: const TextStyle(
-                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
                 ),

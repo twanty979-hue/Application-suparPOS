@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // 🌟 เก็บไว้จำค่ารูปแบบ List/Grid ตัวจุกจิก (อันนี้ถูกหลักการ)
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../api_service.dart'; // 🌟 1. นำเข้า ApiService เพื่อสลับลิงก์คลาวด์/แลน อัตโนมัติ
 import 'package:Pos_Foodscan/services/storage_service.dart'; // 🌟 2. ดึงตู้เซฟเข้ารหัสหุ้มเกราะดิจิทัล
@@ -12,6 +11,7 @@ import '../widgets/suparpos_loading.dart';
 import '../theme/app_colors.dart';
 import '../widgets/products/products_top_bar.dart';
 import '../widgets/modals/add_master_product_modal.dart';
+import '../widgets/bouncing_card.dart';
 
 class MasterProductScreen extends StatefulWidget {
   final bool showTopBar;
@@ -197,6 +197,39 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
     }
   }
 
+  Future<void> _deleteMasterProductData(String id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse("${ApiService.baseUrl}/master-products/$id"),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+
+      final resData = jsonDecode(response.body);
+      if (response.statusCode == 200 && resData['success'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('ลบสินค้าเรียบร้อยแล้ว'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+        await fetchMasterData();
+      } else {
+        throw resData['error'] ?? 'ลบสินค้าล้มเหลว';
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('ลบสินค้าล้มเหลว: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _openMasterFormModal({Map<String, dynamic>? initialProductData}) {
     if (brandId == null) return;
 
@@ -218,6 +251,11 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
             }
             _saveMasterProductData(formData);
           },
+          onDelete: initialProductData != null
+              ? () => _deleteMasterProductData(
+                  initialProductData['id'].toString(),
+                )
+              : null,
         );
       },
     );
@@ -233,11 +271,10 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
     required String? imageUrl,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
@@ -247,108 +284,95 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: SizedBox(
-              width: 92,
-              height: 92,
-              child: imageUrl != null
-                  ? Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const ColoredBox(
-                            color: Color(0xFFF1F5F9),
-                            child: Center(
-                              child: Icon(
-                                Icons.broken_image_outlined,
-                                size: 30,
-                                color: Color(0xFFCBD5E1),
+      child: BouncingCard(
+        onTap: () => _openMasterFormModal(initialProductData: p),
+        glowColor: const Color(0xFF3B82F6),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: SizedBox(
+                  width: 64,
+                  height: 64,
+                  child: imageUrl != null
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const ColoredBox(
+                                color: Color(0xFFF1F5F9),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 18,
+                                    color: Color(0xFFCBD5E1),
+                                  ),
+                                ),
                               ),
+                        )
+                      : const ColoredBox(
+                          color: Color(0xFFF1F5F9),
+                          child: Center(
+                            child: Icon(
+                              Icons.inventory_2_outlined,
+                              size: 18,
+                              color: Color(0xFFCBD5E1),
                             ),
                           ),
-                    )
-                  : const ColoredBox(
-                      color: Color(0xFFF1F5F9),
-                      child: Center(
-                        child: Icon(
-                          Icons.inventory_2_outlined,
-                          size: 30,
-                          color: Color(0xFFCBD5E1),
                         ),
-                      ),
-                    ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  pName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  catName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '฿$price',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    _buildInfoBadge('SKU $skuCode'),
-                    if (barcode != '-' && barcode.isNotEmpty)
-                      _buildInfoBadge('BARCODE $barcode'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Material(
-            color: const Color(0xFFF8FAFC),
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: () => _openMasterFormModal(initialProductData: p),
-              child: const SizedBox(
-                width: 38,
-                height: 38,
-                child: Icon(
-                  Icons.edit_outlined,
-                  color: Color(0xFF64748B),
-                  size: 18,
                 ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      catName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 90,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '฿$price',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -363,7 +387,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 10,
+          fontSize: 8,
           fontWeight: FontWeight.w900,
           color: Color(0xFF64748B),
         ),
@@ -373,7 +397,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
 
   Widget _buildInlineViewToggle() {
     return Container(
-      height: 48,
+      height: 38,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -454,14 +478,20 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
       key: _scaffoldKey,
       backgroundColor: AppColors.bgLight,
       drawer: const AppSidebar(activeMenu: 'inventory'),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'add_master_product',
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        onPressed: _openMasterFormModal,
-        child: const Icon(Icons.add_rounded, size: 30),
+      floatingActionButton: SizedBox(
+        width: 44,
+        height: 44,
+        child: FloatingActionButton(
+          heroTag: 'add_master_product',
+          backgroundColor: const Color(0xFF0F172A),
+          foregroundColor: Colors.white,
+          elevation: 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          onPressed: _openMasterFormModal,
+          child: const Icon(Icons.add_rounded, size: 24),
+        ),
       ),
       body: Builder(
         builder: (context) {
@@ -494,10 +524,11 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                     children: [
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          height: 38,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: const Color(0xFFE2E8F0)),
                           ),
                           child: Row(
@@ -505,18 +536,24 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                               const Icon(
                                 Icons.search,
                                 color: Color(0xFF94A3B8),
+                                size: 18,
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: TextField(
                                   onChanged: (val) =>
                                       setState(() => searchQuery = val),
+                                  style: const TextStyle(fontSize: 12),
                                   decoration: const InputDecoration(
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                     hintText:
                                         'ค้นหาชื่อสินค้า, บาร์โค้ด, SKU...',
                                     hintStyle: TextStyle(
                                       color: Color(0xFF94A3B8),
-                                      fontSize: 13,
+                                      fontSize: 11,
                                     ),
                                     border: InputBorder.none,
                                   ),
@@ -534,7 +571,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
 
                 // --- 🌟 แถบตัวกรองหมวดหมู่หลัก ---
                 SizedBox(
-                  height: 40,
+                  height: 32,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -551,8 +588,8 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                           ),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 8,
+                              horizontal: 12,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
@@ -582,7 +619,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                                     ? Colors.white
                                     : const Color(0xFF64748B),
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                                fontSize: 11,
                               ),
                             ),
                           ),
@@ -655,10 +692,10 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                           gridDelegate:
                               const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 220,
-                                mainAxisExtent: 216,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
+                                maxCrossAxisExtent: 110,
+                                mainAxisExtent: 164,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
                               ),
                           itemCount: filteredMasterProducts.length,
                           itemBuilder: (context, index) {
@@ -666,7 +703,6 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                             final String pName =
                                 p['name']?.toString() ?? 'ไม่มีชื่อ';
                             final String price = p['price']?.toString() ?? '0';
-                            final String skuCode = p['sku']?.toString() ?? '-';
 
                             final catObj = masterCategories.firstWhere(
                               (c) => c['id'] == p['category_id'],
@@ -692,156 +728,119 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                                   ),
                                 ],
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      width: double.infinity,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFFF8FAFC),
-                                        borderRadius: BorderRadius.vertical(
-                                          top: Radius.circular(19),
+                              child: BouncingCard(
+                                onTap: () =>
+                                    _openMasterFormModal(initialProductData: p),
+                                glowColor: const Color(0xFF3B82F6),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Container(
+                                        width: double.infinity,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFF8FAFC),
+                                          borderRadius: BorderRadius.vertical(
+                                            top: Radius.circular(19),
+                                          ),
                                         ),
-                                      ),
-                                      child: Stack(
-                                        children: [
-                                          ClipRRect(
-                                            borderRadius:
-                                                const BorderRadius.vertical(
-                                                  top: Radius.circular(19),
-                                                ),
-                                            child: imageUrl != null
-                                                ? Image.network(
-                                                    imageUrl,
-                                                    width: double.infinity,
-                                                    height: double.infinity,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder:
-                                                        (
-                                                          context,
-                                                          error,
-                                                          stackTrace,
-                                                        ) => Container(
-                                                          color: const Color(
-                                                            0xFFF1F5F9,
-                                                          ),
-                                                          child: const Center(
-                                                            child: Icon(
-                                                              Icons
-                                                                  .broken_image_outlined,
-                                                              size: 36,
-                                                              color: Color(
-                                                                0xFFCBD5E1,
+                                        child: Stack(
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius:
+                                                  const BorderRadius.vertical(
+                                                    top: Radius.circular(19),
+                                                  ),
+                                              child: imageUrl != null
+                                                  ? Image.network(
+                                                      imageUrl,
+                                                      width: double.infinity,
+                                                      height: double.infinity,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder:
+                                                          (
+                                                            context,
+                                                            error,
+                                                            stackTrace,
+                                                          ) => Container(
+                                                            color: const Color(
+                                                              0xFFF1F5F9,
+                                                            ),
+                                                            child: const Center(
+                                                              child: Icon(
+                                                                Icons
+                                                                    .broken_image_outlined,
+                                                                size: 36,
+                                                                color: Color(
+                                                                  0xFFCBD5E1,
+                                                                ),
                                                               ),
                                                             ),
                                                           ),
-                                                        ),
-                                                  )
-                                                : Container(
-                                                    color: const Color(
-                                                      0xFFF1F5F9,
-                                                    ),
-                                                    child: const Center(
-                                                      child: Icon(
-                                                        Icons
-                                                            .inventory_2_outlined,
-                                                        size: 36,
-                                                        color: Color(
-                                                          0xFFCBD5E1,
+                                                    )
+                                                  : Container(
+                                                      color: const Color(
+                                                        0xFFF1F5F9,
+                                                      ),
+                                                      child: const Center(
+                                                        child: Icon(
+                                                          Icons
+                                                              .inventory_2_outlined,
+                                                          size: 36,
+                                                          color: Color(
+                                                            0xFFCBD5E1,
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
-                                                  ),
-                                          ),
-                                          Positioned(
-                                            top: 8,
-                                            right: 8,
-                                            child: Column(
-                                              children: [
-                                                GestureDetector(
-                                                  onTap: () =>
-                                                      _openMasterFormModal(
-                                                        initialProductData: p,
-                                                      ),
-                                                  child: Container(
-                                                    width: 32,
-                                                    height: 32,
-                                                    margin:
-                                                        const EdgeInsets.only(
-                                                          bottom: 6,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white,
-                                                      shape: BoxShape.circle,
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                          color: Colors.black
-                                                              .withValues(
-                                                                alpha: 0.05,
-                                                              ),
-                                                          blurRadius: 4,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.edit_outlined,
-                                                      color: Color(0xFF64748B),
-                                                      size: 15,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          pName,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                            color: Color(0xFF1E293B),
-                                          ),
+                                    SizedBox(
+                                      height: 58,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              pName,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 10,
+                                                color: Color(0xFF1E293B),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              catName,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: Color(0xFF94A3B8),
+                                                fontSize: 8,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '฿$price',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w900,
+                                                color: Color(0xFF0F172A),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          'หมวดหมู่: $catName',
-                                          style: const TextStyle(
-                                            color: Color(0xFF94A3B8),
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                        Text(
-                                          'SKU: $skuCode',
-                                          style: const TextStyle(
-                                            color: Color(0xFF94A3B8),
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '฿$price',
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w900,
-                                            color: Color(0xFF0F172A),
-                                          ),
-                                        ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             );
                           },

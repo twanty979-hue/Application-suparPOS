@@ -46,12 +46,12 @@ class _AppSidebarState extends State<AppSidebar>
 
   bool get _canManageStore => _profileRole.trim().toLowerCase() == 'owner';
 
-  static const _purple = Color(0xFF6D28D9);
+  static const _purple = Color(0xFF15803D); // Changed to Logo Green
   static const _text = Color(0xFF64748B);
   static const _muted = Color(0xFF94A3B8);
   static const _line = Color(0xFFEFF3F8);
-  static const _blue = Color(0xFF2563EB);
-  static const _blueSoft = Color(0xFFEFF6FF);
+  static const _blue = Color(0xFF15803D); // Changed to Logo Green
+  static const _blueSoft = Color(0xFFE8F8EC); // Changed to Soft Green
 
   @override
   void initState() {
@@ -238,9 +238,9 @@ class _AppSidebarState extends State<AppSidebar>
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F3FF),
+                    color: const Color(0xFFE8F8EC), // Soft green
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFEDE9FE)),
+                    border: Border.all(color: const Color(0xFFB7E7C3)), // Green border
                   ),
                   child:
                       _localAvatarPath != null &&
@@ -414,7 +414,7 @@ class _AppSidebarState extends State<AppSidebar>
               borderRadius: BorderRadius.circular(9),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFFBFDBFE)
+                    ? const Color(0xFFB7E7C3)
                     : Colors.transparent,
               ),
             ),
@@ -428,7 +428,7 @@ class _AppSidebarState extends State<AppSidebar>
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isSelected ? const Color(0xFF1D4ED8) : _text,
+                      color: isSelected ? const Color(0xFF15803D) : _text,
                       fontSize: 13,
                       fontWeight: FontWeight.w900,
                     ),
@@ -486,14 +486,14 @@ class _AppSidebarState extends State<AppSidebar>
               height: 46,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF6D28D9), Color(0xFF8B1FE8)],
+                  colors: [Color(0xFF16A34A), Color(0xFF22C55E)], // Green gradient
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF7C3AED).withValues(alpha: 0.28),
+                    color: const Color(0xFF16A34A).withValues(alpha: 0.28),
                     blurRadius: 12,
                     offset: const Offset(0, 5),
                   ),
@@ -549,12 +549,12 @@ class _AppSidebarState extends State<AppSidebar>
         child: Ink(
           height: 50,
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF7D6),
+            color: const Color(0xFFE8F8EC), // Soft green
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected
-                  ? const Color(0xFFF59E0B)
-                  : const Color(0xFFFDE68A),
+                  ? const Color(0xFF22C55E)
+                  : const Color(0xFFB7E7C3),
             ),
           ),
           child: Padding(
@@ -563,7 +563,7 @@ class _AppSidebarState extends State<AppSidebar>
               children: [
                 const Icon(
                   Icons.shopping_bag_outlined,
-                  color: Color(0xFFD97706),
+                  color: Color(0xFF15803D), // Green icon
                   size: 20,
                 ),
                 const SizedBox(width: 14),
@@ -573,7 +573,7 @@ class _AppSidebarState extends State<AppSidebar>
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Color(0xFFB45309),
+                      color: Color(0xFF15803D), // Green text
                       fontSize: 13,
                       fontWeight: FontWeight.w900,
                     ),
@@ -585,7 +585,7 @@ class _AppSidebarState extends State<AppSidebar>
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFFB020), Color(0xFFF97316)],
+                      colors: [Color(0xFF22C55E), Color(0xFF16A34A)], // Green gradient badge
                     ),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
@@ -593,7 +593,7 @@ class _AppSidebarState extends State<AppSidebar>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFF97316).withValues(alpha: 0.28),
+                        color: const Color(0xFF16A34A).withValues(alpha: 0.28),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),

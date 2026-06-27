@@ -147,38 +147,202 @@ class _AddBannerModalState extends State<AddBannerModal> {
     }
   }
 
+  bool _hasUnsavedChanges() {
+    if (widget.initialData != null) {
+      final data = widget.initialData!;
+      final oldIsActive = data['is_active'] ?? true;
+      final oldImageName = data['image_name']?.toString();
+
+      if (_isActive != oldIsActive) return true;
+      if (_uploadedImageName != oldImageName) return true;
+      if (_selectedImageBytes != null) return true;
+      return false;
+    } else {
+      if (_selectedImageBytes != null) return true;
+      if (_isActive != true) return true;
+      return false;
+    }
+  }
+
+  Future<void> _requestClose() async {
+    if (_isUploading) return;
+    
+    if (!_hasUnsavedChanges()) {
+      Navigator.pop(context);
+      return;
+    }
+    
+    final choice = await showDialog<String>(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.35),
+      builder: (dialogContext) => Dialog(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.14),
+                  blurRadius: 32,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.amber.shade600,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'ละทิ้งการแก้ไข?',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'ข้อมูลที่คุณกรอกไว้จะไม่ถูกบันทึก\nคุณแน่ใจหรือไม่ที่จะละทิ้งการแก้ไขนี้?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF64748B),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, 'cancel'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'แก้ไขต่อ',
+                          style: TextStyle(
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(dialogContext, 'discard'),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: Colors.red.shade500,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'ละทิ้ง',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (choice == 'discard' && mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
-        left: 20, right: 20, top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // หัวเรื่องปรับตามโหมด
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _isEditMode ? 'แก้ไขแบนเนอร์เดิม' : 'เพิ่มแบนเนอร์ใหม่', 
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) _requestClose();
+      },
+      child: Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // หัวเรื่องปรับตามโหมด
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _isEditMode ? 'แก้ไขแบนเนอร์เดิม' : 'เพิ่มแบนเนอร์ใหม่', 
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))
+                          ),
+                          const SizedBox(height: 4),
+                          const Text('บังคับขนาด 21:9 (ระบบจะเปิดกล่องครอปให้โดยอัตโนมัติ)', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
+                        ],
                       ),
-                      Text('บังคับขนาด 21:9 (ระบบจะเปิดกล่องครอปให้โดยอัตโนมัติ)', style: TextStyle(fontSize: 11, color: Colors.purple[300])),
-                    ],
-                  ),
-                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, color: Color(0xFF94A3B8))),
-                ],
-              ),
-              const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _requestClose,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF1F5F9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          color: Color(0xFF64748B),
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
 
               // 🖼️ 1. กล่องแสดงภาพแบนเนอร์
               GestureDetector(
@@ -219,55 +383,7 @@ class _AddBannerModalState extends State<AddBannerModal> {
               ),
               const SizedBox(height: 20),
 
-              // 📝 2. ฟิลด์ข้อมูลประกอบ
-              Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('ชื่อแบนเนอร์', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF475569))),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _titleController,
-                          decoration: InputDecoration(hintText: 'เช่น โปรโมชันหน้าร้อน', contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 1,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('↓ ลำดับ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF475569))),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _sortOrderController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), filled: true, fillColor: const Color(0xFFF8FAFC)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              const Text('ลิงก์ปลายทาง (OPTIONAL)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF475569))),
-              const SizedBox(height: 6),
-              TextFormField(
-                controller: _linkUrlController,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.link_rounded, size: 18, color: Color(0xFF94A3B8)),
-                  hintText: 'https://...',
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))
-                ),
-              ),
-              const SizedBox(height: 16),
+              // 📝 2. ลบฟิลด์ข้อมูลประกอบออกตามความต้องการ
 
               // 🟢 3. ปุ่มสวิตช์เปิด-ปิดสถานะ
               Container(
@@ -297,7 +413,7 @@ class _AddBannerModalState extends State<AddBannerModal> {
                         side: const BorderSide(color: Color(0xFFE2E8F0)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: _requestClose,
                       child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold, fontSize: 15)),
                     ),
                   ),
@@ -318,9 +434,9 @@ class _AddBannerModalState extends State<AddBannerModal> {
                         
                         final data = {
                           'image_name': _uploadedImageName,
-                          'title': _titleController.text.trim(),
-                          'link_url': _linkUrlController.text.trim(),
-                          'sort_order': int.tryParse(_sortOrderController.text) ?? 0,
+                          'title': 'โปรโมชันหน้าร้าน', // Default value
+                          'link_url': '',
+                          'sort_order': 0,
                           'is_active': _isActive,
                         };
                         widget.onSave(data);
@@ -337,6 +453,8 @@ class _AddBannerModalState extends State<AddBannerModal> {
             ],
           ),
         ),
+        ),
+      ),
       ),
     );
   }

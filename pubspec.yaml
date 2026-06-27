@@ -49,6 +49,7 @@ dependencies:
   confetti: ^0.8.0
   purchases_flutter: ^10.2.3
   google_sign_in: ^7.2.0
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:

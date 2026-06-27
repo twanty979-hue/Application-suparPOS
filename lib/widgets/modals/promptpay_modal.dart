@@ -1,5 +1,6 @@
 // lib/widgets/modals/promptpay_modal.dart
 import 'package:flutter/material.dart';
+import 'dart:ui';
 
 import '../../theme/app_colors.dart';
 
@@ -32,8 +33,10 @@ class PromptPayModal {
       builder: (context) {
         var isPrinting = false;
 
-        return StatefulBuilder(
-          builder: (context, setModalState) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
             return Dialog(
               backgroundColor: Colors.transparent,
               insetPadding: const EdgeInsets.symmetric(horizontal: 18),
@@ -56,13 +59,9 @@ class PromptPayModal {
                   children: [
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(22, 20, 14, 22),
+                      padding: const EdgeInsets.fromLTRB(22, 12, 14, 12),
                       decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF0B1730), Color(0xFF1D4ED8)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        color: AppColors.slate900,
                       ),
                       child: Row(
                         children: [
@@ -95,15 +94,6 @@ class PromptPayModal {
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),
-                                SizedBox(height: 3),
-                                Text(
-                                  'สแกนชำระเงินตามยอด',
-                                  style: TextStyle(
-                                    color: Color(0xCCFFFFFF),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
                               ],
                             ),
                           ),
@@ -120,7 +110,7 @@ class PromptPayModal {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
+                      padding: const EdgeInsets.fromLTRB(22, 16, 22, 16),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -152,10 +142,10 @@ class PromptPayModal {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 14),
                           Container(
-                            width: 238,
-                            height: 238,
+                            width: 180,
+                            height: 180,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -201,60 +191,35 @@ class PromptPayModal {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          const Text(
-                            'หลังลูกค้าชำระแล้วกดยืนยันเพื่อบันทึกยอด',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: AppColors.slate400,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          if (onPrintReceiptWithQr != null) ...[
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                onPressed: isPrinting
-                                    ? null
-                                    : () async {
-                                        setModalState(() => isPrinting = true);
-                                        await onPrintReceiptWithQr();
-                                        if (context.mounted) {
-                                          setModalState(
-                                            () => isPrinting = false,
-                                          );
-                                        }
-                                      },
-                                icon: isPrinting
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.print_rounded, size: 18),
-                                label: Text(
-                                  isPrinting
-                                      ? 'กำลังพิมพ์...'
-                                      : 'พิมพ์ใบพร้อม QR',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                          ],
                           Row(
                             children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: isPrinting
-                                      ? null
-                                      : () => Navigator.pop(context),
-                                  child: const Text('ยกเลิก'),
+                              if (onPrintReceiptWithQr != null) ...[
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: isPrinting
+                                        ? null
+                                        : () async {
+                                            setModalState(() => isPrinting = true);
+                                            await onPrintReceiptWithQr();
+                                            if (context.mounted) {
+                                              setModalState(() => isPrinting = false);
+                                            }
+                                          },
+                                    icon: isPrinting
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          )
+                                        : const Icon(Icons.print_rounded, size: 18),
+                                    label: Text(
+                                      isPrinting ? 'พิมพ์...' : 'พิมพ์ QR',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
+                                const SizedBox(width: 8),
+                              ],
                               Expanded(
                                 flex: 2,
                                 child: ElevatedButton(
@@ -265,20 +230,16 @@ class PromptPayModal {
                                           onConfirm();
                                         },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.blue600,
+                                    backgroundColor: AppColors.emerald500,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                   ),
                                   child: const Text(
                                     'ยืนยันรับเงินแล้ว',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                    ),
+                                    style: TextStyle(fontWeight: FontWeight.w900),
                                   ),
                                 ),
                               ),
@@ -292,6 +253,7 @@ class PromptPayModal {
               ),
             );
           },
+        ),
         );
       },
     );

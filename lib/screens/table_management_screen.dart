@@ -12,6 +12,7 @@ import '../theme/app_colors.dart';
 import '../widgets/app_sidebar.dart';
 import '../widgets/suparpos_loading.dart';
 import '../widgets/products/products_top_bar.dart';
+import '../widgets/bouncing_card.dart';
 
 class TableManagementScreen extends StatefulWidget {
   final bool showTopBar;
@@ -144,51 +145,98 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFECFDF5),
-                  shape: BoxShape.circle,
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
                 ),
-                child: const Icon(
-                  Icons.nfc_rounded,
-                  color: Color(0xFF10B981),
-                  size: 38,
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0F172A).withOpacity(0.2),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'N',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Arial',
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'แตะแท็ก NFC สำหรับโต๊ะ ${table['label']?.toString() ?? '-'}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF0F172A),
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
+                const SizedBox(height: 24),
+                const Text(
+                  'รอรับสัญญาณ NFC',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'เอาแท็ก NFC แตะหลังเครื่อง รอจนขึ้นว่าเขียนสำเร็จ',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-              ),
-              const SizedBox(height: 18),
-              TextButton(
-                onPressed: () async {
-                  await _nfcChannel.invokeMethod<bool>('cancelNfcWrite');
-                  if (context.mounted) Navigator.pop(context);
-                },
-                child: const Text('ยกเลิก'),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  'นำโทรศัพท์ไปแตะที่สติ๊กเกอร์\nสำหรับโต๊ะ ${table['label'] ?? '-'}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF64748B),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () async {
+                      await _nfcChannel.invokeMethod<bool>('cancelNfcWrite');
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: const Color(0xFFF1F5F9),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'ยกเลิก',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -389,92 +437,252 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   }
 
   void _openTableFormModal({Map<String, dynamic>? initialTableData}) {
-    final labelController = TextEditingController(
-      text: initialTableData == null ? '' : initialTableData['label'] ?? '',
-    );
+    final String initialLabel = initialTableData == null ? '' : initialTableData['label'] ?? '';
+    final labelController = TextEditingController(text: initialLabel);
 
-    showModalBottomSheet(
+    bool hasUnsavedChanges() {
+      return labelController.text.trim() != initialLabel.trim();
+    }
+
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                initialTableData == null
-                    ? 'เพิ่มโต๊ะอาหารใหม่'
-                    : 'แก้ไขข้อมูลโต๊ะ',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'ชื่อเบอร์โต๊ะ *',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Color(0xFF475569),
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: labelController,
-                decoration: InputDecoration(
-                  hintText: 'เช่น T-1, PP',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+      builder: (dialogContext) {
+        Future<void> requestClose() async {
+          if (!hasUnsavedChanges()) {
+            Navigator.pop(dialogContext);
+            return;
+          }
+          
+          final choice = await showDialog<String>(
+            context: dialogContext,
+            barrierColor: Colors.black.withOpacity(0.35),
+            builder: (ctx) => Dialog(
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.14),
+                        blurRadius: 32,
+                        offset: const Offset(0, 14),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.amber.shade600,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'ละทิ้งการแก้ไข?',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'ข้อมูลที่คุณกรอกไว้จะไม่ถูกบันทึก\nคุณแน่ใจหรือไม่ที่จะละทิ้งการแก้ไขนี้?',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF64748B),
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(ctx, 'cancel'),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'แก้ไขต่อ',
+                                style: TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.pop(ctx, 'discard'),
+                              style: ElevatedButton.styleFrom(
+                                elevation: 0,
+                                backgroundColor: Colors.red.shade500,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'ละทิ้ง',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: const Color(0xFF0F172A),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+            ),
+          );
+
+          if (choice == 'discard' && dialogContext.mounted) {
+            Navigator.pop(dialogContext);
+          }
+        }
+
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) {
+            if (!didPop) requestClose();
+          },
+          child: Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    initialTableData == null
+                        ? 'เพิ่มโต๊ะอาหารใหม่'
+                        : 'แก้ไขข้อมูลโต๊ะ',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF0F172A),
                     ),
                   ),
-                  onPressed: () {
-                    if (labelController.text.trim().isEmpty) return;
-                    final data = {
-                      'label': labelController.text.trim(),
-                      'access_token': initialTableData == null
-                          ? _generatePasscode()
-                          : initialTableData['access_token'],
-                    };
-                    if (initialTableData != null) {
-                      data['id'] = initialTableData['id'];
-                    }
-                    _saveTableData(data);
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    'บันทึก',
+                  const SizedBox(height: 24),
+                  const Text(
+                    'ชื่อเบอร์โต๊ะ *',
                     style: TextStyle(
-                      color: Colors.white,
                       fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: Color(0xFF475569),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: labelController,
+                    decoration: InputDecoration(
+                      hintText: 'เช่น T-1, PP',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Row(
+                    children: [
+                      if (initialTableData != null) ...[
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: const Color(0xFFFEE2E2),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(dialogContext);
+                              _confirmDelete(initialTableData);
+                            },
+                            child: const Text(
+                              'ลบโต๊ะ',
+                              style: TextStyle(
+                                color: Color(0xFFDC2626),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: const Color(0xFF0F172A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onPressed: () {
+                            if (labelController.text.trim().isEmpty) return;
+                            final data = {
+                              'label': labelController.text.trim(),
+                              'access_token': initialTableData == null
+                                  ? _generatePasscode()
+                                  : initialTableData['access_token'],
+                            };
+                            if (initialTableData != null) {
+                              data['id'] = initialTableData['id'];
+                            }
+                            _saveTableData(data);
+                            Navigator.pop(dialogContext);
+                          },
+                          child: Text(
+                            initialTableData == null ? 'บันทึกโต๊ะ' : 'บันทึกการแก้ไข',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
@@ -492,14 +700,20 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       key: _scaffoldKey,
       backgroundColor: AppColors.bgLight,
       drawer: const AppSidebar(activeMenu: 'menu_management'),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'add_table',
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        onPressed: _openTableFormModal,
-        child: const Icon(Icons.add_rounded, size: 30),
+      floatingActionButton: SizedBox(
+        width: 44,
+        height: 44,
+        child: FloatingActionButton(
+          heroTag: 'add_table',
+          backgroundColor: const Color(0xFF0F172A),
+          foregroundColor: Colors.white,
+          elevation: 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          onPressed: _openTableFormModal,
+          child: const Icon(Icons.add_rounded, size: 26),
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -543,59 +757,36 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
       child: Column(
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.table_restaurant_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'จัดการโต๊ะ',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
+              // แถบค้นหาตามดีไซน์ master_product_screen
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.search, color: Color(0xFF94A3B8)),
-                      const SizedBox(width: 12),
+                      const Icon(Icons.search, color: Color(0xFF94A3B8), size: 18),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
                           onChanged: (val) => setState(() => searchQuery = val),
+                          style: const TextStyle(fontSize: 12),
                           decoration: const InputDecoration(
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(vertical: 8),
                             hintText: 'ค้นหาเบอร์โต๊ะ...',
                             hintStyle: TextStyle(
                               color: Color(0xFF94A3B8),
-                              fontSize: 14,
+                              fontSize: 11,
                             ),
                             border: InputBorder.none,
                           ),
@@ -625,7 +816,15 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.nfc_rounded, color: Color(0xFF059669), size: 18),
+                  Text(
+                    'N',
+                    style: TextStyle(
+                      color: Color(0xFF059669),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Arial',
+                    ),
+                  ),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -650,8 +849,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 92),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 210,
-        mainAxisExtent: _canUseNfc && _nfcWriteMode ? 178 : 166,
+        maxCrossAxisExtent: 150, // โมดูลเล็กเป็นสี่เหลี่ยมจัตุรัส
+        mainAxisExtent: _canUseNfc && _nfcWriteMode ? 120 : 96, // ปรับความสูงลงเมื่อไม่มีปุ่ม
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
@@ -670,160 +869,105 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   }
 
   Widget _buildTableCard(dynamic table) {
-    final bool isAvailable = table['status'] == 'available';
-    final String passcode = table['access_token'] ?? '----';
-
-    return GestureDetector(
-      onTap: _canUseNfc && _nfcWriteMode ? () => _writeTableToNfc(table) : null,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: _nfcWriteMode
-                ? const Color(0xFF10B981)
-                : const Color(0xFFE2E8F0),
-            width: _nfcWriteMode ? 1.4 : 1,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x08000000),
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            ),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _nfcWriteMode
+              ? const Color(0xFF10B981)
+              : const Color(0xFFE2E8F0),
+          width: _nfcWriteMode ? 1.4 : 1,
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildTableIdentity(table, isAvailable),
-                _nfcWriteMode ? _buildNfcBadge() : _buildDeleteButton(table),
-              ],
-            ),
-            Column(
-              children: [
-                const Text(
-                  'PASSCODE',
-                  style: TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: BouncingCard(
+        onTap: _canUseNfc && _nfcWriteMode
+            ? () => _writeTableToNfc(table)
+            : () => _openTableFormModal(initialTableData: table),
+        glowColor: _nfcWriteMode ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: _canUseNfc && _nfcWriteMode
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildTableNumber(table),
+                        _buildNfcBadge(),
+                      ],
+                    ),
+                    _buildTapToWriteHint(),
+                  ],
+                )
+              : Center(
+                  child: _buildTableNumber(table, large: true),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  passcode,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF1E293B),
-                    letterSpacing: 2.0,
-                  ),
-                ),
-              ],
-            ),
-            _nfcWriteMode ? _buildTapToWriteHint() : _buildTableActions(table),
-          ],
         ),
       ),
     );
   }
 
   Widget _buildTableListTile(dynamic table) {
-    final bool isAvailable = table['status'] == 'available';
-    final String passcode = table['access_token'] ?? '----';
-
-    return GestureDetector(
-      onTap: _canUseNfc && _nfcWriteMode ? () => _writeTableToNfc(table) : null,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: _nfcWriteMode
-                ? const Color(0xFF10B981)
-                : const Color(0xFFE2E8F0),
-            width: _nfcWriteMode ? 1.4 : 1,
-          ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: _nfcWriteMode
+              ? const Color(0xFF10B981)
+              : const Color(0xFFE2E8F0),
+          width: _nfcWriteMode ? 1.4 : 1,
         ),
-        child: Row(
-          children: [
-            _buildTableNumber(table),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'โต๊ะ ${table['label']?.toString() ?? '-'}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF1E293B),
+      ),
+      child: BouncingCard(
+        onTap: _canUseNfc && _nfcWriteMode
+            ? () => _writeTableToNfc(table)
+            : () => _openTableFormModal(initialTableData: table),
+        glowColor: _nfcWriteMode ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              _buildTableNumber(table),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'โต๊ะ ${table['label']?.toString() ?? '-'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1E293B),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  _buildStatusText(isAvailable),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      const Text(
-                        'PASSCODE',
-                        style: TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        passcode,
-                        style: const TextStyle(
-                          color: Color(0xFF0F172A),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_canUseNfc && _nfcWriteMode) ...[
-                    const SizedBox(height: 8),
-                    _buildTapToWriteHint(),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            _nfcWriteMode
-                ? _buildNfcBadge()
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildRoundAction(
-                        icon: Icons.refresh_rounded,
-                        color: const Color(0xFF64748B),
-                        onTap: () => _refreshPasscode(table),
-                      ),
+                    if (_canUseNfc && _nfcWriteMode) ...[
                       const SizedBox(height: 8),
-                      _buildRoundAction(
-                        icon: Icons.delete_outline,
-                        color: const Color(0xFFEF4444),
-                        onTap: () => _confirmDelete(table),
-                      ),
+                      _buildTapToWriteHint(),
                     ],
-                  ),
-          ],
+                  ],
+                ),
+              ),
+              if (_canUseNfc && _nfcWriteMode) ...[
+                const SizedBox(width: 12),
+                _buildNfcBadge(),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -832,25 +976,28 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   Widget _buildTapToWriteHint() {
     return Container(
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFFECFDF5),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.touch_app_rounded, color: Color(0xFF059669), size: 15),
-          SizedBox(width: 5),
-          Text(
-            'กดเพื่อเขียน NFC',
-            style: TextStyle(
-              color: Color(0xFF059669),
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
+      child: const FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.touch_app_rounded, color: Color(0xFF059669), size: 14),
+            SizedBox(width: 4),
+            Text(
+              'แตะเขียน NFC',
+              style: TextStyle(
+                color: Color(0xFF059669),
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -862,132 +1009,37 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
         color: Color(0xFFECFDF5),
         shape: BoxShape.circle,
       ),
-      child: const Icon(Icons.nfc_rounded, color: Color(0xFF059669), size: 18),
+      child: const Text(
+        'N',
+        style: TextStyle(
+          color: Color(0xFF059669),
+          fontSize: 16,
+          fontWeight: FontWeight.w900,
+          fontFamily: 'Arial',
+        ),
+      ),
     );
   }
 
-  Widget _buildTableIdentity(dynamic table, bool isAvailable) {
-    return Row(
-      children: [
-        _buildTableNumber(table),
-        const SizedBox(width: 8),
-        _buildStatusText(isAvailable),
-      ],
-    );
-  }
+  // _buildTableIdentity removed
 
-  Widget _buildTableNumber(dynamic table) {
+  Widget _buildTableNumber(dynamic table, {bool large = false}) {
     return Container(
-      width: 42,
-      height: 42,
+      width: large ? 60 : 42,
+      height: large ? 60 : 42,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(large ? 20 : 12),
       ),
       child: Text(
         table['label']?.toString() ?? '-',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusText(bool isAvailable) {
-    final color = isAvailable ? const Color(0xFF10B981) : Colors.red;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.circle, size: 8, color: color),
-        const SizedBox(width: 4),
-        Text(
-          isAvailable ? 'ว่าง' : 'ไม่ว่าง',
-          style: TextStyle(
-            color: color,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDeleteButton(dynamic table) {
-    return GestureDetector(
-      onTap: () => _confirmDelete(table),
-      child: const Icon(
-        Icons.delete_outline,
-        color: Color(0xFFCBD5E1),
-        size: 20,
-      ),
-    );
-  }
-
-  Widget _buildTableActions(dynamic table) {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0F172A),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-            ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('กำลังพัฒนาฟีเจอร์สแกน QR 🔜')),
-              );
-            },
-            icon: const Icon(
-              Icons.qr_code_2_rounded,
-              color: Colors.white,
-              size: 16,
-            ),
-            label: const Text(
-              'QR',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        _buildRoundAction(
-          icon: Icons.refresh_rounded,
-          color: const Color(0xFF94A3B8),
-          onTap: () => _refreshPasscode(table),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoundAction({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Icon(icon, color: color, size: 18),
+          fontWeight: FontWeight.w900,
+          fontSize: large ? 20 : 16,
         ),
       ),
     );
@@ -995,11 +1047,11 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
 
   Widget _buildInlineViewToggle() {
     return Container(
-      height: 48,
+      height: 38,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
@@ -1024,28 +1076,33 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     if (!_canUseNfc) return const SizedBox.shrink();
     return Material(
       color: _nfcWriteMode ? const Color(0xFF10B981) : Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         onTap: () {
           if (!_canUseNfc) return;
           setState(() => _nfcWriteMode = !_nfcWriteMode);
         },
         child: Container(
-          height: 48,
-          width: 52,
+          height: 38,
+          width: 42,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _nfcWriteMode
                   ? const Color(0xFF10B981)
                   : const Color(0xFFE2E8F0),
             ),
           ),
-          child: Icon(
-            Icons.nfc_rounded,
-            color: _nfcWriteMode ? Colors.white : const Color(0xFF64748B),
-            size: 22,
+          alignment: Alignment.center,
+          child: Text(
+            'N',
+            style: TextStyle(
+              color: _nfcWriteMode ? Colors.white : const Color(0xFF64748B),
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'Arial',
+            ),
           ),
         ),
       ),

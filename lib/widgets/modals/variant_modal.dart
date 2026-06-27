@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui';
 import '../../theme/app_colors.dart';
 
 class VariantModal {
@@ -20,8 +21,8 @@ class VariantModal {
         onTap: () => Navigator.pop(context, variantKey),
         borderRadius: BorderRadius.circular(24),
         child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.slate100)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.slate100)),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -54,21 +55,25 @@ class VariantModal {
       context: context,
       barrierColor: AppColors.slate900.withOpacity(0.4),
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-          child: Container(
-            width: 400, padding: const EdgeInsets.all(32), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(40)),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text("เลือกขนาด", style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.slate900)),
-                const SizedBox(height: 32),
-                buildVariantBtn('normal', 'ธรรมดา'),
-                if (product['price_special'] != null) ...[const SizedBox(height: 12), buildVariantBtn('special', 'พิเศษ ✨')],
-                if (product['price_jumbo'] != null) ...[const SizedBox(height: 12), buildVariantBtn('jumbo', 'จัมโบ้ 🔥')],
-                const SizedBox(height: 16),
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก", style: TextStyle(color: AppColors.slate400, fontWeight: FontWeight.bold)))
-              ],
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Dialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            child: Container(
+              width: 440, padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text("เลือกขนาด", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.slate900)),
+                  const SizedBox(height: 16),
+                  buildVariantBtn('normal', 'ธรรมดา'),
+                  if (product['price_special'] != null) ...[const SizedBox(height: 12), buildVariantBtn('special', 'พิเศษ ✨')],
+                  if (product['price_jumbo'] != null) ...[const SizedBox(height: 12), buildVariantBtn('jumbo', 'จัมโบ้ 🔥')],
+                  const SizedBox(height: 16),
+                  TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก", style: TextStyle(color: AppColors.slate400, fontWeight: FontWeight.bold)))
+                ],
+              ),
             ),
           ),
         );

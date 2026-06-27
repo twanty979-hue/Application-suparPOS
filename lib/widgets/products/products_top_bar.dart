@@ -64,6 +64,16 @@ class _ProductsTopBarState extends State<ProductsTopBar> {
     super.dispose();
   }
 
+  final List<Map<String, dynamic>> _tabs = [
+    {'id': 'menu', 'icon': Icons.add_box_outlined, 'label': 'เมนูอาหาร'},
+    {'id': 'main_product', 'icon': Icons.create_new_folder_outlined, 'label': 'สินค้าหลัก'},
+    {'id': 'table', 'icon': Icons.table_restaurant_outlined, 'label': 'จัดการโต๊ะ'},
+    {'id': 'banner', 'icon': Icons.image_outlined, 'label': 'แบนเนอร์'},
+    {'id': 'discount', 'icon': Icons.local_offer_outlined, 'label': 'ส่วนลด/โปรฯ'},
+  ];
+
+  int get _activeIndex => _tabs.indexWhere((tab) => tab['id'] == widget.activeTab);
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -88,125 +98,109 @@ class _ProductsTopBarState extends State<ProductsTopBar> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final compact = constraints.maxWidth < 390;
-                final buttons = _buildNavButtons(context, compact: compact);
+                
+                // สำหรับจอเล็ก (compact) ให้คำนวณความกว้างเฉลี่ยเพื่อให้ปุ่มเต็มพื้นที่พอดี
+                final double usableWidth = constraints.maxWidth - 8; // ลบ padding ซ้ายขวาฝั่งละ 4
+                final double compactButtonW = usableWidth / _tabs.length;
+                
+                final double inactiveW = compact ? compactButtonW : 54.0;
+                final double activeW = compact ? compactButtonW : 135.0; // จอเล็กไม่ต้องขยายความกว้าง เพราะไม่มีตัวหนังสือ
+                final int activeIdx = _activeIndex;
+                final double indicatorLeft = activeIdx >= 0 ? activeIdx * inactiveW : 0.0;
+                
+                final pillContainer = Container(
+                  height: compact ? 42 : 46,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Stack(
+                    children: [
+                      // ตัวชี้ (Indicator) ที่วิ่งไปมาสไลด์จริงๆ
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        left: indicatorLeft,
+                        top: 0,
+                        bottom: 0,
+                        width: activeIdx >= 0 ? activeW : 0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF2563EB).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                      // ปุ่มกดแบบโปร่งใส วางทับอยู่ด้านบน
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(_tabs.length, (index) {
+                          final tab = _tabs[index];
+                          final isActive = index == activeIdx;
+                          return GestureDetector(
+                            onTap: () => _handleTabTap(context, tab['id']),
+                            behavior: HitTestBehavior.opaque,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                              width: isActive ? activeW : inactiveW,
+                              alignment: Alignment.center,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const NeverScrollableScrollPhysics(),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      tab['icon'],
+                                      size: 20,
+                                      color: isActive ? Colors.white : const Color(0xFF64748B),
+                                    ),
+                                    if (isActive && !compact) ...[
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        tab['label'],
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                );
 
                 if (compact) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: buttons,
-                  );
+                  return pillContainer;
                 }
 
                 return SingleChildScrollView(
                   controller: _scrollController,
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
-                  child: Row(children: buttons),
+                  child: pillContainer,
                 );
               },
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  List<Widget> _buildNavButtons(BuildContext context, {required bool compact}) {
-    return [
-      _buildNavButton(
-        context,
-        id: 'menu',
-        icon: Icons.add_box_outlined,
-        label: 'เมนูอาหาร',
-        isActive: widget.activeTab == 'menu',
-        compact: compact,
-      ),
-      _buildNavButton(
-        context,
-        id: 'main_product',
-        icon: Icons.create_new_folder_outlined,
-        label: 'สินค้าหลัก',
-        isActive: widget.activeTab == 'main_product',
-        compact: compact,
-      ),
-      _buildNavButton(
-        context,
-        id: 'table',
-        icon: Icons.table_restaurant_outlined,
-        label: 'จัดการโต๊ะ',
-        isActive: widget.activeTab == 'table',
-        compact: compact,
-      ),
-      _buildNavButton(
-        context,
-        id: 'banner',
-        icon: Icons.image_outlined,
-        label: 'แบนเนอร์',
-        isActive: widget.activeTab == 'banner',
-        compact: compact,
-      ),
-      _buildNavButton(
-        context,
-        id: 'discount',
-        icon: Icons.local_offer_outlined,
-        label: 'ส่วนลด/โปรฯ',
-        isActive: widget.activeTab == 'discount',
-        compact: compact,
-      ),
-    ];
-  }
-
-  Widget _buildNavButton(
-    BuildContext context, {
-    required String id,
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required bool compact,
-  }) {
-    return Padding(
-      padding: EdgeInsets.only(right: compact ? 2 : 6),
-      child: AnimatedSize(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        alignment: Alignment.centerLeft,
-        child: InkWell(
-          onTap: () => _handleTabTap(context, id),
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? 7 : 14,
-              vertical: 10,
-            ),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? const Color(0xFF2563EB)
-                  : const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  color: isActive ? Colors.white : const Color(0xFF64748B),
-                ),
-                if (isActive && !compact) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

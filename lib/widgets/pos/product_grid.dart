@@ -51,17 +51,17 @@ class ProductGrid extends StatelessWidget {
           children: [
             Container(
               padding: EdgeInsets.fromLTRB(
-                isDesktop ? 24 : 12,
-                isDesktop ? 24 : 12,
-                isDesktop ? 24 : 12,
-                isDesktop ? 18 : 10,
+                isDesktop ? 16 : 8,
+                isDesktop ? 16 : 8,
+                isDesktop ? 16 : 8,
+                isDesktop ? 12 : 8,
               ),
               color: Colors.white,
               child: Container(
-                height: isDesktop ? 64 : 48,
+                height: isDesktop ? 50 : 40,
                 decoration: BoxDecoration(
                   color: AppColors.slate50,
-                  borderRadius: BorderRadius.circular(isDesktop ? 24 : 12),
+                  borderRadius: BorderRadius.circular(isDesktop ? 16 : 10),
                   border: Border.all(color: AppColors.slate100, width: 2),
                   boxShadow: [
                     BoxShadow(
@@ -103,10 +103,10 @@ class ProductGrid extends StatelessWidget {
                       ),
                     ),
                     Padding(
-                      padding: EdgeInsets.only(right: isDesktop ? 10 : 6),
+                      padding: EdgeInsets.only(right: isDesktop ? 8 : 4),
                       child: SizedBox(
-                        width: isDesktop ? 56 : 36,
-                        height: isDesktop ? 46 : 36,
+                        width: isDesktop ? 44 : 32,
+                        height: isDesktop ? 36 : 30,
                         child: ElevatedButton(
                           onPressed: onCameraPressed,
                           style: ElevatedButton.styleFrom(
@@ -117,7 +117,7 @@ class ProductGrid extends StatelessWidget {
                             padding: EdgeInsets.zero,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
-                                isDesktop ? 18 : 9,
+                                isDesktop ? 12 : 8,
                               ),
                             ),
                           ),

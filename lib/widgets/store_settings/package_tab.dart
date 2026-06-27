@@ -3,9 +3,13 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../modals/variant_modal.dart';
+import '../modals/quota_history_modal.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../theme/app_colors.dart';
 import '../../api_service.dart';
@@ -50,6 +54,10 @@ class _PackageTabState extends State<PackageTab> {
   String _dynamicCurrentPlan = 'free';
   DateTime? _dynamicExpiryDate;
   int? _dynamicDaysLeft;
+  
+  int _orderCount = 0;
+  int _orderLimit = -1;
+  List<dynamic> _orderHistory = [];
 
   Timer? _paymentTimer;
 
@@ -102,6 +110,25 @@ class _PackageTabState extends State<PackageTab> {
             if (result['daysLeft'] != null) {
               _dynamicDaysLeft = result['daysLeft'];
             }
+          });
+        }
+      }
+
+      // ดึงข้อมูลจำนวนบิลปัจจุบันเพื่อเอาไปโชว์ในแพ็กเกจฟรี
+      final quotaRes = await http.get(
+        Uri.parse('${ApiService.baseUrl}/pos/quota'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (accessToken != null) 'Authorization': 'Bearer $accessToken',
+        },
+      );
+      if (quotaRes.statusCode == 200) {
+        final quotaResult = jsonDecode(quotaRes.body);
+        if (quotaResult['success'] == true) {
+          setState(() {
+            _orderCount = quotaResult['usage'] ?? 0;
+            _orderLimit = quotaResult['limit'] ?? -1;
+            _orderHistory = quotaResult['history'] ?? [];
           });
         }
       }
@@ -932,7 +959,19 @@ class _PackageTabState extends State<PackageTab> {
                 ),
               ),
               const Spacer(),
-              const Icon(Icons.storefront_outlined, color: _blue, size: 26),
+              GestureDetector(
+                onTap: () {
+                  if (_orderHistory.isNotEmpty) {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => QuotaHistoryModal(history: _orderHistory),
+                    );
+                  }
+                },
+                child: const Icon(Icons.storefront_outlined, color: _blue, size: 26),
+              ),
             ],
           ),
           const SizedBox(height: 34),
@@ -955,9 +994,9 @@ class _PackageTabState extends State<PackageTab> {
             ),
           ),
           const SizedBox(height: 30),
-          _buildPlanMetric(Icons.diamond_outlined, 'THEMES', '2 ธีม'),
+          _buildPlanMetric(Icons.storefront_rounded, 'POS', 'ขายหน้าร้านไม่จำกัด'),
           const SizedBox(height: 18),
-          _buildPlanMetric(Icons.check_rounded, 'ORDERS', '100 ออเดอร์/เดือน'),
+          _buildPlanMetric(Icons.qr_code_scanner_rounded, 'QR BILL', '$_orderCount/$_orderLimit บิล'),
           const SizedBox(height: 56),
           SizedBox(
             width: double.infinity,

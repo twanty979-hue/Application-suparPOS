@@ -99,16 +99,156 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
     return '$day/$month/$year $hour:$minute';
   }
 
+  bool _hasUnsavedChanges() {
+    if (_nameController.text.isNotEmpty) return true;
+    if (_valueController.text.isNotEmpty) return true;
+    if (_type != 'percentage') return true;
+    if (_applyNormal != true) return true;
+    if (_applySpecial != true) return true;
+    if (_applyJumbo != true) return true;
+    if (_startDate != null) return true;
+    if (_endDate != null) return true;
+    if (_applyTo != 'all') return true;
+    if (_selectedProductIds.isNotEmpty) return true;
+    return false;
+  }
+
+  Future<void> _requestClose() async {
+    if (!_hasUnsavedChanges()) {
+      Navigator.pop(context);
+      return;
+    }
+    
+    final choice = await showDialog<String>(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.35),
+      builder: (dialogContext) => Dialog(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.14),
+                  blurRadius: 32,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.amber.shade600,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'ละทิ้งการสร้าง?',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'ข้อมูลที่คุณกรอกไว้จะไม่ถูกบันทึก\nคุณแน่ใจหรือไม่ที่จะละทิ้งการสร้างนี้?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF64748B),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, 'cancel'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'ทำต่อ',
+                          style: TextStyle(
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(dialogContext, 'discard'),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: Colors.red.shade500,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'ละทิ้ง',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (choice == 'discard' && mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
 
-    return Container(
-      height: screenHeight * 0.9,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) _requestClose();
+      },
+      child: Container(
+        height: screenHeight * 0.82, // ลดขนาดให้เล็กลงเหมือนหน้า master product
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
       child: Column(
         children: [
           // --- HEADER & CLOSE BUTTON ---
@@ -122,7 +262,7 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
                   decoration: const BoxDecoration(color: Color(0xFFF1F5F9), shape: BoxShape.circle),
                   child: IconButton(
                     icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 20),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: _requestClose,
                     constraints: const BoxConstraints(),
                     padding: const EdgeInsets.all(8),
                   ),
@@ -239,6 +379,7 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -10,6 +10,7 @@ import '../widgets/app_sidebar.dart';
 import '../widgets/suparpos_loading.dart';
 import '../theme/app_colors.dart';
 import '../widgets/products/products_top_bar.dart';
+import '../widgets/bouncing_card.dart';
 
 class BannerManagementScreen extends StatefulWidget {
   const BannerManagementScreen({super.key});
@@ -142,20 +143,16 @@ class _BannerManagementScreenState extends State<BannerManagementScreen> {
 
   void _openAddBannerModal({Map<String, dynamic>? initialBannerData}) {
     if (brandId == null) return;
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
       builder: (context) {
         return AddBannerModal(
           brandId: brandId!,
           initialData: initialBannerData,
           onSave: (formData) async {
-            if (initialBannerData != null)
+            if (initialBannerData != null) {
               formData['id'] = initialBannerData['id'];
+            }
             await _saveBannerToDatabase(formData);
           },
         );
@@ -323,115 +320,114 @@ class _BannerManagementScreenState extends State<BannerManagementScreen> {
                               b['image_name'],
                             );
 
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: const Color(0xFFE2E8F0),
+                            return BouncingCard(
+                              onTap: () => _openAddBannerModal(initialBannerData: b),
+                              glowColor: const Color(0xFF3B82F6),
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isActive
+                                        ? const Color(0xFF0F172A)
+                                        : const Color(0xFFE2E8F0),
+                                    width: isActive ? 2 : 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.04),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AspectRatio(
-                                    aspectRatio: 16 / 9,
-                                    child: Stack(
-                                      children: [
-                                        Positioned.fill(
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                const BorderRadius.vertical(
-                                                  top: Radius.circular(15),
-                                                ),
-                                            child: imageUrl != null
-                                                ? Image.network(
-                                                    imageUrl,
-                                                    width: double.infinity,
-                                                    fit: BoxFit.cover,
-                                                  )
-                                                : Container(
-                                                    color: const Color(
-                                                      0xFFF1F5F9,
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.image,
-                                                      size: 48,
-                                                      color: Color(0xFFCBD5E1),
-                                                    ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    AspectRatio(
+                                      aspectRatio: 21 / 9,
+                                      child: Stack(
+                                        children: [
+                                          Positioned.fill(
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  const BorderRadius.vertical(
+                                                    top: Radius.circular(14),
                                                   ),
-                                          ),
-                                        ),
-                                        Positioned(
-                                          top: 12,
-                                          right: 12,
-                                          child: GestureDetector(
-                                            onTap: () => _openAddBannerModal(
-                                              initialBannerData: b,
-                                            ),
-                                            child: Container(
-                                              width: 36,
-                                              height: 36,
-                                              decoration: const BoxDecoration(
-                                                color: Colors.white,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                Icons.edit_outlined,
-                                                color: Color(0xFF64748B),
-                                                size: 18,
-                                              ),
+                                              child: imageUrl != null
+                                                  ? Image.network(
+                                                      imageUrl,
+                                                      width: double.infinity,
+                                                      fit: BoxFit.cover,
+                                                    )
+                                                  : Container(
+                                                      color: const Color(
+                                                        0xFFF1F5F9,
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.image,
+                                                        size: 48,
+                                                        color: Color(0xFFCBD5E1),
+                                                      ),
+                                                    ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(14),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                bTitle,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 15,
-                                                  color: Color(0xFF1E293B),
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                                          Positioned(
+                                            top: 12,
+                                            right: 12,
+                                            child: GestureDetector(
+                                              onTap: () => _openAddBannerModal(
+                                                initialBannerData: b,
                                               ),
-                                              Text(
-                                                'ลำดับคิว: ${b['sort_order'] ?? 0}',
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Color(0xFF94A3B8),
+                                              child: Container(
+                                                width: 36,
+                                                height: 36,
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.edit_outlined,
+                                                  color: Color(0xFF64748B),
+                                                  size: 18,
                                                 ),
                                               ),
-                                            ],
+                                            ),
                                           ),
-                                        ),
-                                        Switch(
-                                          value: isActive,
-                                          activeColor: const Color(0xFF2563EB),
-                                          onChanged: (val) =>
-                                              _toggleBannerStatus(
-                                                bId,
-                                                isActive,
-                                              ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    Padding(
+                                      padding: const EdgeInsets.all(14),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Expanded(
+                                            child: Text(
+                                              'แสดงผลแบนเนอร์หน้าร้าน',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 14,
+                                                color: Color(0xFF1E293B),
+                                              ),
+                                            ),
+                                          ),
+                                          Switch(
+                                            value: isActive,
+                                            activeColor: const Color(0xFF10B981),
+                                            onChanged: (val) =>
+                                                _toggleBannerStatus(
+                                                  bId,
+                                                  isActive,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             );
                           },

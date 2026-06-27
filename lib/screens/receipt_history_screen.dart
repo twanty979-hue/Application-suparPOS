@@ -29,12 +29,9 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
   String _effectivePlan = 'free';
 
   // --- States ระบบฟิลเตอร์และเวลา ---
-  String _viewMode = 'custom'; // เปิดครั้งแรกเป็นช่วง 30 วันล่าสุด
+  String _viewMode = 'today';
   DateTime _currentDate = DateTime.now();
-  DateTimeRange? _customDateRange = DateTimeRange(
-    start: DateTime.now().subtract(const Duration(days: 29)),
-    end: DateTime.now(),
-  );
+  DateTimeRange? _customDateRange;
 
   String _statusFilter = 'all';
   String _searchQuery = '';
@@ -85,39 +82,17 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
   // 🗓️ คำนวณช่วงวันที่
   Map<String, String> _getDateRange() {
     DateTime start, end;
-    if (_viewMode == 'day') {
-      start = DateTime(
-        _currentDate.year,
-        _currentDate.month,
-        _currentDate.day,
-        0,
-        0,
-        0,
-        0,
-      );
-      end = DateTime(
-        _currentDate.year,
-        _currentDate.month,
-        _currentDate.day,
-        23,
-        59,
-        59,
-        999,
-      );
-    } else if (_viewMode == 'month') {
-      start = DateTime(_currentDate.year, _currentDate.month, 1, 0, 0, 0, 0);
-      end = DateTime(
-        _currentDate.year,
-        _currentDate.month + 1,
-        0,
-        23,
-        59,
-        59,
-        999,
-      );
-    } else if (_viewMode == 'year') {
-      start = DateTime(_currentDate.year, 1, 1, 0, 0, 0, 0);
-      end = DateTime(_currentDate.year, 12, 31, 23, 59, 59, 999);
+    final now = DateTime.now();
+
+    if (_viewMode == 'today') {
+      start = DateTime(now.year, now.month, now.day, 0, 0, 0, 0);
+      end = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+    } else if (_viewMode == 'last7days') {
+      start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
+      end = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+    } else if (_viewMode == 'last30days') {
+      start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29));
+      end = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
     } else {
       start = _customDateRange?.start ?? DateTime.now();
       start = DateTime(start.year, start.month, start.day, 0, 0, 0, 0);
@@ -178,41 +153,22 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
     }
   }
 
-  void _shiftDate(int amount) {
-    if (_viewMode == 'custom') return;
-    setState(() {
-      if (_viewMode == 'day') {
-        _currentDate = _currentDate.add(Duration(days: amount));
-      } else if (_viewMode == 'month') {
-        _currentDate = DateTime(
-          _currentDate.year,
-          _currentDate.month + amount,
-          _currentDate.day,
-        );
-      } else if (_viewMode == 'year') {
-        _currentDate = DateTime(
-          _currentDate.year + amount,
-          _currentDate.month,
-          _currentDate.day,
-        );
-      }
-    });
-    _loadSessionAndFetch(isLoadMore: false);
-  }
-
   Future<void> _selectCustomDateRange() async {
     final now = DateTime.now();
     final isFreePlan = _effectivePlan == 'free';
-    final firstAllowedDate = isFreePlan
-        ? DateTime(
-            now.year,
-            now.month,
-            now.day,
-          ).subtract(const Duration(days: 29))
-        : DateTime(2020);
+    
+    // Free สูงสุด 7 วัน (ย้อนหลัง 6 วัน) นอกนั้นสูงสุด 30 วัน (ย้อนหลัง 29 วัน)
+    final maxDaysAllowed = isFreePlan ? 6 : 29;
+    
+    final firstAllowedDate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: maxDaysAllowed));
+
     final currentRange =
         _customDateRange ??
-        DateTimeRange(start: now.subtract(const Duration(days: 29)), end: now);
+        DateTimeRange(start: firstAllowedDate, end: now);
     final initialEnd = currentRange.end.isBefore(firstAllowedDate)
         ? now
         : (currentRange.end.isAfter(now) ? now : currentRange.end);
@@ -229,8 +185,8 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
       lastDate: now,
       initialDateRange: initialRange,
       helpText: isFreePlan
-          ? 'เลือกช่วงเวลา (Free ดูย้อนหลังได้ 30 วัน)'
-          : 'เลือกช่วงเวลาประวัติการขาย',
+          ? 'เลือกช่วงเวลา (Free สูงสุด 7 วัน)'
+          : 'เลือกช่วงเวลา (สูงสุด 30 วัน)',
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -267,33 +223,13 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
   }
 
   String _formatDateDisplay() {
-    const thMonths = [
-      'ม.ค.',
-      'ก.พ.',
-      'มี.ค.',
-      'เม.ย.',
-      'พ.ค.',
-      'มิ.ย.',
-      'ก.ค.',
-      'ส.ค.',
-      'ก.ย.',
-      'ต.ค.',
-      'พ.ย.',
-      'ธ.ค.',
-    ];
-    final yearTh = _currentDate.year + 543;
-    if (_viewMode == 'day') {
-      return "${_currentDate.day} ${thMonths[_currentDate.month - 1]} $yearTh";
-    } else if (_viewMode == 'month') {
-      return "${thMonths[_currentDate.month - 1]} $yearTh";
-    } else if (_viewMode == 'year') {
-      return "$yearTh";
-    } else {
-      if (_customDateRange == null) return "เลือกช่วงเวลา";
-      final s = _customDateRange!.start;
-      final e = _customDateRange!.end;
-      return "${s.day}/${s.month}/${s.year + 543} - ${e.day}/${e.month}/${e.year + 543}";
-    }
+    if (_viewMode == 'today') return "วันนี้";
+    if (_viewMode == 'last7days') return "7 วันล่าสุด";
+    if (_viewMode == 'last30days') return "30 วันล่าสุด";
+    if (_customDateRange == null) return "เลือกช่วงเวลา";
+    final s = _customDateRange!.start;
+    final e = _customDateRange!.end;
+    return "${s.day}/${s.month}/${s.year + 543} - ${e.day}/${e.month}/${e.year + 543}";
   }
 
   void _showReceiptDetailModal(Map<String, dynamic> receipt) {
@@ -874,8 +810,8 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                           child: Row(
                             children:
                                 (_effectivePlan == 'free'
-                                        ? ['day', 'custom']
-                                        : ['day', 'month', 'year', 'custom'])
+                                        ? ['today', 'last7days', 'custom']
+                                        : ['today', 'last7days', 'last30days', 'custom'])
                                     .map((mode) {
                                       final bool isModeSelected =
                                           _viewMode == mode;
@@ -907,13 +843,13 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                                             ),
                                           ),
                                           child: Text(
-                                            mode == 'day'
-                                                ? 'วัน'
-                                                : mode == 'month'
-                                                ? 'เดือน'
-                                                : mode == 'year'
-                                                ? 'ปี'
-                                                : 'ช่วงเวลา',
+                                            mode == 'today'
+                                                ? 'วันนี้'
+                                                : mode == 'last7days'
+                                                ? '7 วัน'
+                                                : mode == 'last30days'
+                                                ? '30 วัน'
+                                                : 'เลือกเอง',
                                             style: TextStyle(
                                               fontSize: 10.5,
                                               fontWeight: FontWeight.bold,
@@ -930,71 +866,18 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              GestureDetector(
-                                onTap: _viewMode == 'custom'
-                                    ? null
-                                    : () => _shiftDate(-1),
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: _viewMode == 'custom'
-                                        ? const Color(0xFFF1F5F9)
-                                        : const Color(0xFFF8FAFC),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: const Color(0xFFE2E8F0),
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.chevron_left,
-                                    size: 16,
-                                    color: _viewMode == 'custom'
-                                        ? const Color(0xFFCBD5E1)
-                                        : const Color(0xFF64748B),
-                                  ),
-                                ),
+                          child: Center(
+                            child: Text(
+                              _formatDateDisplay(),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF334155),
                               ),
-                              Expanded(
-                                child: Text(
-                                  _formatDateDisplay(),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFF334155),
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _viewMode == 'custom'
-                                    ? null
-                                    : () => _shiftDate(1),
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: _viewMode == 'custom'
-                                        ? const Color(0xFFF1F5F9)
-                                        : const Color(0xFFF8FAFC),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: const Color(0xFFE2E8F0),
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.chevron_right,
-                                    size: 16,
-                                    color: _viewMode == 'custom'
-                                        ? const Color(0xFFCBD5E1)
-                                        : const Color(0xFF64748B),
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ],

@@ -480,15 +480,46 @@ class _LoginPageState extends State<LoginPage> {
 
   String _friendlyError(Object error) {
     final text = error.toString().replaceFirst('Exception: ', '');
-    if (text.contains('Invalid login credentials')) {
+    final lower = text.toLowerCase();
+
+    // Network & Internet Errors
+    if (lower.contains('socketexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('connection refused') ||
+        lower.contains('network is unreachable') ||
+        lower.contains('clientexception')) {
+      return 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบอินเทอร์เน็ต';
+    }
+    if (lower.contains('timeout')) {
+      return 'การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง';
+    }
+
+    // Auth & Validation Errors
+    if (lower.contains('invalid login credentials')) {
       return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
     }
-    if (text.contains('Email not confirmed')) {
+    if (lower.contains('email not confirmed')) {
       return 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ';
     }
-    if (text.contains('User already registered')) {
-      return 'อีเมลนี้สมัครสมาชิกแล้ว';
+    if (lower.contains('user already registered') || lower.contains('already registered')) {
+      return 'อีเมลนี้มีการสมัครสมาชิกในระบบแล้ว';
     }
+    if (lower.contains('password should be at least') || lower.contains('weak_password')) {
+      return 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษรและคาดเดายาก';
+    }
+    if (lower.contains('invalid email') || lower.contains('invalid_email')) {
+      return 'รูปแบบอีเมลไม่ถูกต้อง';
+    }
+    if (lower.contains('user not found')) {
+      return 'ไม่พบบัญชีผู้ใช้งานนี้ในระบบ';
+    }
+    if (lower.contains('to protect your account') || lower.contains('rate_limit') || lower.contains('too many requests')) {
+      return 'คุณทำรายการบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่';
+    }
+    if (lower.contains('invalid or has expired') || lower.contains('expired')) {
+      return 'ลิงก์หรือรหัสยืนยันไม่ถูกต้อง/หมดอายุแล้ว';
+    }
+
     return text;
   }
 

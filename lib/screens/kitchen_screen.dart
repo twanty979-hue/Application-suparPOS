@@ -21,13 +21,13 @@ class KitchenScreen extends StatefulWidget {
 }
 
 class _KitchenScreenState extends State<KitchenScreen> {
-  static const Color _bg = Color(0xFFF6F7FB);
+  static const Color _bg = Color(0xFFFAF9F6); // สีขาวไข่ (Off-white)
   static const Color _surface = Colors.white;
   static const Color _ink = Color(0xFF111827);
   static const Color _muted = Color(0xFF64748B);
   static const Color _line = Color(0xFFE2E8F0);
-  static const Color _pending = Color(0xFFF97316);
-  static const Color _preparing = Color(0xFF2563EB);
+  static const Color _pending = Color(0xFF15803D); // สีเขียวหลักสำหรับสถานะ "รอรับ"
+  static const Color _preparing = Color(0xFF059669); // สีเขียวอีกเฉดสำหรับสถานะ "กำลังทำ"
 
   List<dynamic> _pendingOrders = [];
   List<dynamic> _preparingOrders = [];
@@ -309,19 +309,12 @@ class _KitchenScreenState extends State<KitchenScreen> {
       body: Column(
         children: [
           Container(
-            margin: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            padding: const EdgeInsets.all(5),
+            margin: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: _surface,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _line),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
             ),
             child: Row(
               children: [
@@ -340,36 +333,28 @@ class _KitchenScreenState extends State<KitchenScreen> {
               ],
             ),
           ),
-
           Expanded(
             child: _isLoading
                 ? const SuparPosLoading(fullScreen: false)
                 : displayOrders.isEmpty
                 ? Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 28,
-                        vertical: 24,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       decoration: BoxDecoration(
                         color: _surface,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: _line),
                       ),
                       child: const Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.inbox_outlined,
-                            color: Color(0xFFCBD5E1),
-                            size: 44,
-                          ),
-                          SizedBox(height: 12),
+                          Icon(Icons.inbox_outlined, color: Color(0xFFCBD5E1), size: 32),
+                          SizedBox(height: 8),
                           Text(
-                            'ไม่มีออเดอร์ในสถานะนี้',
+                            'ไม่มีออเดอร์',
                             style: TextStyle(
                               color: _muted,
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w800,
                               fontFamily: 'Kanit',
                             ),
@@ -379,7 +364,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
                     itemCount: displayOrders.length,
                     itemBuilder: (context, index) {
                       final order = displayOrders[index];
@@ -392,70 +377,43 @@ class _KitchenScreenState extends State<KitchenScreen> {
     );
   }
 
-  Widget _buildTabButton(
-    String tabId,
-    String title,
-    int count,
-    Color activeColor,
-  ) {
+  Widget _buildTabButton(String tabId, String title, int count, Color activeColor) {
     final isActive = _activeTab == tabId;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _activeTab = tabId),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 10),
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: isActive ? activeColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: activeColor.withOpacity(0.22),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
-                    ),
-                  ]
-                : null,
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                tabId == 'pending'
-                    ? Icons.receipt_long_rounded
-                    : Icons.restaurant_rounded,
-                size: 18,
-                color: isActive ? Colors.white : _muted,
-              ),
-              const SizedBox(width: 8),
               Text(
                 title,
                 style: TextStyle(
                   color: isActive ? Colors.white : _muted,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
                   fontFamily: 'Kanit',
                 ),
               ),
               if (count > 0) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 2,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                   decoration: BoxDecoration(
-                    color: isActive
-                        ? Colors.white.withOpacity(0.22)
-                        : activeColor,
-                    borderRadius: BorderRadius.circular(10),
+                    color: isActive ? Colors.white.withOpacity(0.25) : _line,
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '$count',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
+                    style: TextStyle(
+                      color: isActive ? Colors.white : _muted,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -472,280 +430,137 @@ class _KitchenScreenState extends State<KitchenScreen> {
     final items = order['order_items'] as List<dynamic>? ?? [];
     final isPending = order['status'] == 'pending';
     final accent = isPending ? _pending : _preparing;
+    final timeStr = _formatTime(order['created_at']);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: _surface,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _line),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 22,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: accent.withOpacity(0.06),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(22),
-              ),
-              border: const Border(bottom: BorderSide(color: _line)),
-            ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: _ink,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         order['table_label']?.toString().toUpperCase() ?? '-',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                        ),
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'โต๊ะ',
-                          style: TextStyle(
-                            color: _muted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            fontFamily: 'Kanit',
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: accent.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            isPending ? 'รอรับออเดอร์' : 'กำลังทำ',
-                            style: TextStyle(
-                              color: accent,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'Kanit',
-                            ),
-                          ),
-                        ),
-                      ],
+                    const SizedBox(width: 8),
+                    Text(
+                      timeStr,
+                      style: const TextStyle(color: _muted, fontSize: 11, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
                 Row(
                   children: [
-                    InkWell(
-                      // 🚀 แก้ไข onTap ตรงนี้ครับนาย!
-                      onTap: () => _printKitchenOrder(order),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: _line),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.print_outlined,
-                          color: _muted,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () => _cancelOrder(order['id']),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: _line),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.delete_outline,
-                          color: _muted,
-                          size: 20,
-                        ),
-                      ),
-                    ),
+                    _buildSmallIconBtn(Icons.print_outlined, () => _printKitchenOrder(order)),
+                    const SizedBox(width: 6),
+                    _buildSmallIconBtn(Icons.delete_outline, () => _cancelOrder(order['id'])),
                   ],
                 ),
               ],
             ),
           ),
-
+          const Divider(height: 1, color: _line),
+          // Items
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: items.map((item) {
                 bool isCancelled = item['status'] == 'cancelled';
-
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.only(bottom: 6),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 42,
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isCancelled
-                              ? const Color(0xFFF8FAFC)
-                              : accent.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isCancelled
-                                ? const Color(0xFFE2E8F0)
-                                : accent.withOpacity(0.16),
-                          ),
-                        ),
-                        alignment: Alignment.center,
+                      SizedBox(
+                        width: 24,
                         child: Text(
                           '${item['quantity']}x',
                           style: TextStyle(
-                            color: isCancelled
-                                ? const Color(0xFFCBD5E1)
-                                : accent,
+                            color: isCancelled ? const Color(0xFFCBD5E1) : accent,
+                            fontSize: 13,
                             fontWeight: FontWeight.w900,
-                            fontSize: 15,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    item['product_name'] ?? 'ไม่ระบุชื่อ',
-                                    style: TextStyle(
-                                      color: isCancelled
-                                          ? const Color(0xFF94A3B8)
-                                          : _ink,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      decoration: isCancelled
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                    ),
-                                  ),
-                                ),
-                                if (isCancelled)
-                                  Container(
-                                    margin: const EdgeInsets.only(left: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFEE2E2),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Text(
-                                      'ยกเลิก',
-                                      style: TextStyle(
-                                        color: Color(0xFFEF4444),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'Kanit',
-                                      ),
-                                    ),
-                                  ),
-                              ],
+                            Text(
+                              item['product_name'] ?? 'ไม่ระบุชื่อ',
+                              style: TextStyle(
+                                color: isCancelled ? const Color(0xFF94A3B8) : _ink,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                decoration: isCancelled ? TextDecoration.lineThrough : null,
+                                height: 1.2,
+                              ),
                             ),
-                            if (item['variant'] != 'normal' &&
-                                item['variant'] != null)
+                            if (item['variant'] != 'normal' && item['variant'] != null)
                               Text(
-                                'ตัวเลือก: ${item['variant']}',
+                                '${item['variant']}',
                                 style: TextStyle(
-                                  color: isCancelled
-                                      ? const Color(0xFFCBD5E1)
-                                      : _muted,
-                                  fontSize: 13,
-                                  decoration: isCancelled
-                                      ? TextDecoration.lineThrough
-                                      : null,
+                                  color: isCancelled ? const Color(0xFFCBD5E1) : _muted,
+                                  fontSize: 11,
+                                  decoration: isCancelled ? TextDecoration.lineThrough : null,
+                                  height: 1.2,
                                 ),
                               ),
-                            if (item['note'] != null &&
-                                item['note'].toString().trim().isNotEmpty)
+                            if (item['note'] != null && item['note'].toString().trim().isNotEmpty)
                               Container(
-                                margin: const EdgeInsets.only(top: 6),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 6,
-                                ),
+                                margin: const EdgeInsets.only(top: 2),
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                 decoration: BoxDecoration(
-                                  color: isCancelled
-                                      ? const Color(0xFFF8FAFC)
-                                      : const Color(0xFFFFF7ED),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: isCancelled
-                                        ? const Color(0xFFE2E8F0)
-                                        : const Color(0xFFFED7AA),
-                                  ),
+                                  color: isCancelled ? const Color(0xFFF8FAFC) : const Color(0xFFFFF7ED),
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  'หมายเหตุ: ${item['note']}',
+                                  '${item['note']}',
                                   style: TextStyle(
-                                    color: isCancelled
-                                        ? const Color(0xFFCBD5E1)
-                                        : const Color(0xFFEA580C),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
+                                    color: isCancelled ? const Color(0xFFCBD5E1) : const Color(0xFFEA580C),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 12),
                       InkWell(
-                        onTap: () =>
-                            _toggleItemStatus(item['id'], item['status']),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isCancelled
-                                ? const Color(0xFFF8FAFC)
-                                : Colors.white,
-                            border: Border.all(
-                              color: isCancelled ? Colors.transparent : _line,
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                        onTap: () => _toggleItemStatus(item['id'], item['status']),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 6),
                           child: Icon(
-                            isCancelled
-                                ? Icons.reply_rounded
-                                : Icons.delete_outline,
-                            color: isCancelled ? _preparing : _muted,
-                            size: 20,
+                            isCancelled ? Icons.reply_rounded : Icons.close_rounded,
+                            color: isCancelled ? _preparing : const Color(0xFFCBD5E1),
+                            size: 16,
                           ),
                         ),
                       ),
@@ -755,39 +570,48 @@ class _KitchenScreenState extends State<KitchenScreen> {
               }).toList(),
             ),
           ),
-
+          // Action Button
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isPending ? _ink : _preparing,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+            child: SizedBox(
+              height: 36,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isPending ? _ink : _preparing,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-              ),
-              onPressed: () {
-                final nextStatus = isPending ? 'preparing' : 'done';
-                _updateOrderStatus(order['id'], nextStatus);
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    isPending ? 'รับออเดอร์' : 'ทำเสร็จแล้ว',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+                onPressed: () {
+                  final nextStatus = isPending ? 'preparing' : 'done';
+                  _updateOrderStatus(order['id'], nextStatus);
+                },
+                child: Text(
+                  isPending ? 'รับออเดอร์' : 'ทำเสร็จแล้ว',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSmallIconBtn(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          border: Border.all(color: _line),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, size: 14, color: _muted),
       ),
     );
   }

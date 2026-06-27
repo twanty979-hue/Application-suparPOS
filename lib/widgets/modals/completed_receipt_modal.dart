@@ -1,6 +1,7 @@
 // lib/widgets/modals/completed_receipt_modal.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui';
 
 class CompletedReceiptModal {
   static void show(
@@ -66,7 +67,9 @@ class CompletedReceiptModal {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
-        return Dialog(
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(16),
           child: Container(
@@ -372,6 +375,7 @@ class CompletedReceiptModal {
                 ),
               ],
             ),
+          ),
           ),
         );
       },
