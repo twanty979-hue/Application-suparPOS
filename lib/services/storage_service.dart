@@ -24,6 +24,8 @@ class StorageService {
   static Future<void> saveSession(Map<String, dynamic> session) async {
     final accessToken = session['access_token']?.toString() ?? '';
     final refreshToken = session['refresh_token']?.toString() ?? '';
+    final user = session['user'];
+    final userId = user is Map ? user['id']?.toString() ?? '' : '';
     final writes = <Future<dynamic>>[];
     if (accessToken.isNotEmpty) {
       writes.add(_storage.write(key: 'access_token', value: accessToken));
@@ -33,6 +35,9 @@ class StorageService {
     }
     if (refreshToken.isNotEmpty) {
       writes.add(_storage.write(key: 'refresh_token', value: refreshToken));
+    }
+    if (userId.isNotEmpty) {
+      writes.add(_storage.write(key: 'saved_user_id', value: userId));
     }
     await Future.wait(writes);
   }
@@ -130,6 +135,27 @@ class StorageService {
 
   static Future<String> getBrandId() async {
     return await _storage.read(key: 'saved_brand_id') ?? '';
+  }
+
+  static Future<String?> getUserId() async {
+    final savedUserId = await _storage.read(key: 'saved_user_id');
+    if (savedUserId != null && savedUserId.isNotEmpty) return savedUserId;
+
+    final token = await _storage.read(key: 'access_token');
+    if (token == null || token.isEmpty) return null;
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+      final userId = payload is Map ? payload['sub']?.toString() : null;
+      if (userId == null || userId.isEmpty) return null;
+      await _storage.write(key: 'saved_user_id', value: userId);
+      return userId;
+    } catch (_) {
+      return null;
+    }
   }
 
   // 🗑️ ฟังก์ชันลบข้อมูล (ใช้ตอน Logout)

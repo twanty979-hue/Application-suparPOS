@@ -49,9 +49,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _hasShownSyncDialog = false;
 
   // Filter & UI States
-  String _viewMode = 'month'; // day, month, year, custom
+  String _viewMode = 'custom'; // เปิดครั้งแรกเป็นช่วง 30 วันล่าสุด
   DateTime _currentDate = DateTime.now();
-  DateTimeRange? _customDateRange;
+  DateTimeRange? _customDateRange = DateTimeRange(
+    start: DateTime.now().subtract(const Duration(days: 29)),
+    end: DateTime.now(),
+  );
 
   int _selectedBottomTab = 0; // 0 = กราฟรายได้, 1 = เมนูขายดี
 
@@ -146,6 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _checkOfflineData() async {
     try {
       final db = await DatabaseHelper.instance.database;
+      await SyncManager().cleanupCompletedQueue();
       final result = await db.rawQuery(
         "SELECT COUNT(*) as count FROM sync_queue WHERE type = 'PAYMENT' AND status = 'pending'",
       );
@@ -167,13 +171,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _handleSyncNow({BuildContext? dialogContext}) async {
+  Future<void> _handleSyncNow({
+    BuildContext? dialogContext,
+    void Function(int completed, int total)? onProgress,
+  }) async {
     if (_unsyncedCount == 0) return;
     setState(() => _isSyncing = true);
 
     try {
       final syncManager = SyncManager();
-      await syncManager.runSyncWorker();
+      await syncManager.runSyncWorker(onProgress: onProgress);
       await _checkOfflineData();
       await _fetchDashboardData();
       if (dialogContext != null && dialogContext.mounted) {
@@ -201,6 +208,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       barrierDismissible: false, // บังคับให้ต้องเลือกกดปุ่ม
       builder: (dialogContext) {
         bool modalSyncing = _isSyncing;
+        double modalProgress = 0;
 
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -240,11 +248,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ],
                           ),
                           child: modalSyncing
-                              ? const Center(
-                                  child: CircularProgressIndicator(
-                                    color: Color(0xFFD97706),
-                                    strokeWidth: 3,
-                                  ),
+                              ? Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: 48,
+                                      height: 48,
+                                      child: CircularProgressIndicator(
+                                        value: modalProgress,
+                                        color: const Color(0xFFD97706),
+                                        backgroundColor: const Color(
+                                          0xFFFDE68A,
+                                        ),
+                                        strokeWidth: 4,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${(modalProgress * 100).round()}%',
+                                      style: const TextStyle(
+                                        color: Color(0xFF92400E),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
                                 )
                               : const Icon(
                                   Icons.cloud_off_rounded,
@@ -355,6 +382,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 setModalState(() => modalSyncing = true);
                                 await _handleSyncNow(
                                   dialogContext: dialogContext,
+                                  onProgress: (completed, total) {
+                                    if (!dialogContext.mounted) return;
+                                    setModalState(() {
+                                      modalProgress = total == 0
+                                          ? 1
+                                          : completed / total;
+                                    });
+                                  },
                                 );
                                 if (dialogContext.mounted) {
                                   setModalState(() => modalSyncing = false);
@@ -419,16 +454,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _selectCustomDateRange() async {
+    final now = DateTime.now();
+    final isFreePlan = _effectivePlan == 'free';
+    final firstAllowedDate = isFreePlan
+        ? DateTime(
+            now.year,
+            now.month,
+            now.day,
+          ).subtract(const Duration(days: 29))
+        : DateTime(2020);
+    final currentRange =
+        _customDateRange ??
+        DateTimeRange(start: now.subtract(const Duration(days: 29)), end: now);
+    final initialEnd = currentRange.end.isBefore(firstAllowedDate)
+        ? now
+        : (currentRange.end.isAfter(now) ? now : currentRange.end);
+    final initialRange = DateTimeRange(
+      start: currentRange.start.isBefore(firstAllowedDate)
+          ? firstAllowedDate
+          : currentRange.start,
+      end: initialEnd,
+    );
+
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      initialDateRange:
-          _customDateRange ??
-          DateTimeRange(
-            start: DateTime.now().subtract(const Duration(days: 7)),
-            end: DateTime.now(),
-          ),
+      firstDate: firstAllowedDate,
+      lastDate: now,
+      initialDateRange: initialRange,
+      helpText: isFreePlan
+          ? 'เลือกช่วงเวลา (Free ดูย้อนหลังได้ 30 วัน)'
+          : 'เลือกช่วงเวลารายงาน',
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(
@@ -491,7 +546,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_customDateRange != null) {
       final s = _customDateRange!.start;
       final e = _customDateRange!.end;
-      return "${s.day} - ${e.day} ${thMonths[e.month - 1]}";
+      return "${s.day} ${thMonths[s.month - 1]} - ${e.day} ${thMonths[e.month - 1]}";
     }
     return "ช่วงเวลานี้";
   }
@@ -532,49 +587,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           children: [
-                            // --- Top Grid Cards ---
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildMetricCard(
-                                    title: 'ยอดขาย',
-                                    value: _formatCurrency(totalRev),
-                                    subtitle: _formatDateShort(),
-                                    icon: Icons.trending_up_rounded,
-                                    iconBgColor: const Color(
-                                      0xFF4F46E5,
-                                    ), // ฟ้าม่วง
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildMetricCard(
-                                    title: 'ออเดอร์',
-                                    value: '${_formatNumber(totalOrders)} บิล',
-                                    subtitle: 'สำเร็จ',
-                                    icon: Icons
-                                        .camera_alt_outlined, // ไอคอนคล้ายๆ รูปกล้องในเรฟ
-                                    iconBgColor: const Color(
-                                      0xFFDB2777,
-                                    ), // ชมพูบานเย็น
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // --- Bottom Full Card ---
-                            SizedBox(
-                              width: double.infinity,
-                              child: _buildMetricCard(
-                                title: 'ยอดต่อบิล (AOV)',
-                                value: _formatCurrency(aov),
-                                subtitle: 'เฉลี่ยต่อลูกค้า',
-                                icon: Icons.pie_chart_outline_rounded,
-                                iconBgColor: const Color(0xFF10B981), // เขียวสด
-                              ),
+                            _buildMetricsOverview(
+                              totalRevenue: totalRev,
+                              totalOrders: totalOrders,
+                              averageOrderValue: aov,
                             ),
 
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 18),
 
                             // --- Tabs Toggle ---
                             Container(
@@ -741,71 +760,183 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // --- Card ข้อมูลตามดีไซน์รูปภาพ ---
-  Widget _buildMetricCard({
-    required String title,
-    required String value,
-    required String subtitle,
-    required IconData icon,
-    required Color iconBgColor,
+  Widget _buildMetricsOverview({
+    required double totalRevenue,
+    required int totalOrders,
+    required double averageOrderValue,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEFF2F6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: const Color(0xFF0F172A).withOpacity(0.035),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: Colors.white, size: 24),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF94A3B8),
+          Expanded(
+            child: _buildCompactMetric(
+              title: 'ยอดขาย',
+              value: _formatCurrency(totalRevenue),
+              icon: Icons.trending_up_rounded,
+              color: const Color(0xFF4F46E5),
             ),
           ),
-          const SizedBox(height: 4),
-          FittedBox(
+          _buildMetricDivider(),
+          Expanded(
+            child: _buildCompactMetric(
+              title: 'ออเดอร์',
+              value: _formatNumber(totalOrders),
+              icon: Icons.receipt_long_rounded,
+              color: const Color(0xFFEC4899),
+            ),
+          ),
+          _buildMetricDivider(),
+          Expanded(
+            child: _buildCompactMetric(
+              title: 'ต่อบิล',
+              value: _formatCurrency(averageOrderValue),
+              icon: Icons.stacked_line_chart_rounded,
+              color: const Color(0xFF10B981),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricDivider() {
+    return Container(
+      width: 1,
+      height: 54,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: const Color(0xFFEFF2F6),
+    );
+  }
+
+  Widget _buildCompactMetric({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Icon(icon, size: 16, color: color),
+        ),
+        const SizedBox(height: 7),
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF94A3B8),
+          ),
+        ),
+        const SizedBox(height: 2),
+        SizedBox(
+          width: double.infinity,
+          height: 22,
+          child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               value,
+              maxLines: 1,
               style: const TextStyle(
-                fontSize: 28,
+                fontSize: 16,
                 fontWeight: FontWeight.w900,
                 color: Color(0xFF0F172A),
-                letterSpacing: -1.0,
+                letterSpacing: -0.35,
               ),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFFCBD5E1),
-            ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdvancedTabs() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 520;
+        final buttons = [
+          _buildAdvancedTabButton(
+            'รายชั่วโมง',
+            0,
+            Icons.access_time_filled_rounded,
+            compact: isCompact,
           ),
-        ],
-      ),
+          _buildAdvancedTabButton(
+            'การชำระเงิน',
+            1,
+            Icons.payments_rounded,
+            compact: isCompact,
+          ),
+          _buildAdvancedTabButton(
+            'โต๊ะ/ออเดอร์',
+            2,
+            Icons.table_restaurant_rounded,
+            compact: isCompact,
+          ),
+          _buildAdvancedTabButton(
+            'พนักงาน',
+            3,
+            Icons.people_alt_rounded,
+            compact: isCompact,
+          ),
+        ];
+
+        final content = isCompact
+            ? Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: buttons[0]),
+                      const SizedBox(width: 4),
+                      Expanded(child: buttons[1]),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(child: buttons[2]),
+                      const SizedBox(width: 4),
+                      Expanded(child: buttons[3]),
+                    ],
+                  ),
+                ],
+              )
+            : Row(children: buttons);
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFEFF2F6)),
+          ),
+          child: content,
+        );
+      },
     );
   }
 
@@ -1010,7 +1141,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // --- ส่วนรายงานขั้นสูง (Pro Feature) ---
   Widget _buildAdvancedReportsSection() {
-    final bool isUnlocked = _effectivePlan == 'pro' || _effectivePlan == 'ultimate';
+    final bool isUnlocked =
+        _effectivePlan == 'pro' || _effectivePlan == 'ultimate';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1060,7 +1192,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 12),
+                  Icon(
+                    Icons.workspace_premium_rounded,
+                    color: Colors.white,
+                    size: 12,
+                  ),
                   SizedBox(width: 4),
                   Text(
                     'PRO',
@@ -1078,51 +1214,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 16),
 
         // Tabs
-        SizedBox(
-          width: double.infinity,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  _buildAdvancedTabButton(
-                    'รายชั่วโมง',
-                    0,
-                    Icons.access_time_filled_rounded,
-                  ),
-                  _buildAdvancedTabButton(
-                    'ช่องทางชำระเงิน',
-                    1,
-                    Icons.payments_rounded,
-                  ),
-                  _buildAdvancedTabButton(
-                    'วิเคราะห์โต๊ะ',
-                    2,
-                    Icons.table_restaurant_rounded,
-                  ),
-                  _buildAdvancedTabButton(
-                    'พนักงาน',
-                    3,
-                    Icons.people_alt_rounded,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        _buildAdvancedTabs(),
         const SizedBox(height: 16),
 
         // Body Content
@@ -1131,44 +1223,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: !isUnlocked
               ? _buildLockedOverlay()
               : _selectedAdvancedTab == 0
-                  ? _buildHourlySalesSection()
-                  : _selectedAdvancedTab == 1
-                      ? _buildPaymentStatsSection()
-                      : _selectedAdvancedTab == 2
-                          ? _buildTableStatsSection()
-                          : _buildCashierStatsSection(),
+              ? _buildHourlySalesSection()
+              : _selectedAdvancedTab == 1
+              ? _buildPaymentStatsSection()
+              : _selectedAdvancedTab == 2
+              ? _buildTableStatsSection()
+              : _buildCashierStatsSection(),
         ),
       ],
     );
   }
 
-  Widget _buildAdvancedTabButton(String title, int index, IconData icon) {
+  Widget _buildAdvancedTabButton(
+    String title,
+    int index,
+    IconData icon, {
+    bool compact = false,
+  }) {
     final bool isActive = _selectedAdvancedTab == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedAdvancedTab = index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        padding: EdgeInsets.symmetric(
+          vertical: compact ? 9 : 10,
+          horizontal: compact ? 8 : 16,
+        ),
         decoration: BoxDecoration(
           color: isActive ? const Color(0xFF0F172A) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              size: 14,
+              size: compact ? 13 : 14,
               color: isActive ? Colors.white : const Color(0xFF64748B),
             ),
-            const SizedBox(width: 6),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                color: isActive ? Colors.white : const Color(0xFF64748B),
+            SizedBox(width: compact ? 5 : 6),
+            Flexible(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: compact ? 11 : 12,
+                  fontWeight: FontWeight.w800,
+                  color: isActive ? Colors.white : const Color(0xFF64748B),
+                ),
               ),
             ),
           ],
@@ -1286,7 +1390,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 20),
+                  Icon(
+                    Icons.workspace_premium_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   SizedBox(width: 8),
                   Text(
                     'อัปเกรดเป็นแผน PRO เลย',
@@ -1358,10 +1466,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: _hourlySales.map((h) {
-                  final int hour = int.tryParse(h['hour']?.toString() ?? '0') ?? 0;
-                  final double revenue = double.tryParse(h['revenue']?.toString() ?? '0') ?? 0.0;
-                  final int orders = int.tryParse(h['orders']?.toString() ?? '0') ?? 0;
-                  final double barHeight = (revenue / maxRevenue) * 110; // ความสูงสูงสุดของแท่งคือ 110
+                  final int hour =
+                      int.tryParse(h['hour']?.toString() ?? '0') ?? 0;
+                  final double revenue =
+                      double.tryParse(h['revenue']?.toString() ?? '0') ?? 0.0;
+                  final int orders =
+                      int.tryParse(h['orders']?.toString() ?? '0') ?? 0;
+                  final double barHeight =
+                      (revenue / maxRevenue) *
+                      110; // ความสูงสูงสุดของแท่งคือ 110
 
                   final hourStr = hour < 10 ? '0$hour:00' : '$hour:00';
 
@@ -1370,7 +1483,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ScaffoldMessenger.of(context).removeCurrentSnackBar();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('$hourStr น. | ยอดขาย: ${_formatCurrency(revenue)} ($orders บิล)'),
+                          content: Text(
+                            '$hourStr น. | ยอดขาย: ${_formatCurrency(revenue)} ($orders บิล)',
+                          ),
                           duration: const Duration(seconds: 2),
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -1402,8 +1517,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: revenue > 0
-                                    ? [const Color(0xFF818CF8), const Color(0xFF4F46E5)]
-                                    : [const Color(0xFFE2E8F0), const Color(0xFFCBD5E1)],
+                                    ? [
+                                        const Color(0xFF818CF8),
+                                        const Color(0xFF4F46E5),
+                                      ]
+                                    : [
+                                        const Color(0xFFE2E8F0),
+                                        const Color(0xFFCBD5E1),
+                                      ],
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                               ),
@@ -1446,7 +1567,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     double totalPaymentRevenue = 0.0;
     for (var p in _paymentStats) {
-      totalPaymentRevenue += double.tryParse(p['revenue']?.toString() ?? '0') ?? 0.0;
+      totalPaymentRevenue +=
+          double.tryParse(p['revenue']?.toString() ?? '0') ?? 0.0;
     }
     if (totalPaymentRevenue == 0) totalPaymentRevenue = 1.0;
 
@@ -1479,12 +1601,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _paymentStats.length,
-            separatorBuilder: (context, index) => const Divider(height: 24, color: Color(0xFFF1F5F9)),
+            separatorBuilder: (context, index) =>
+                const Divider(height: 24, color: Color(0xFFF1F5F9)),
             itemBuilder: (context, index) {
               final item = _paymentStats[index];
               final String rawMethod = item['method']?.toString() ?? 'other';
-              final double revenue = double.tryParse(item['revenue']?.toString() ?? '0') ?? 0.0;
-              final int orders = int.tryParse(item['orders']?.toString() ?? '0') ?? 0;
+              final double revenue =
+                  double.tryParse(item['revenue']?.toString() ?? '0') ?? 0.0;
+              final int orders =
+                  int.tryParse(item['orders']?.toString() ?? '0') ?? 0;
               final double ratio = revenue / totalPaymentRevenue;
 
               // หาไอคอนและสีที่เหมาะสมตามช่องทางการชำระเงิน
@@ -1626,13 +1751,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: sortedTables.length,
-            separatorBuilder: (context, index) => const Divider(height: 20, color: Color(0xFFF1F5F9)),
+            separatorBuilder: (context, index) =>
+                const Divider(height: 20, color: Color(0xFFF1F5F9)),
             itemBuilder: (context, index) {
               final item = sortedTables[index];
               final String label = item['table']?.toString() ?? 'Walk-in';
               final String type = item['type']?.toString() ?? 'takeaway';
-              final double revenue = double.tryParse(item['revenue']?.toString() ?? '0') ?? 0.0;
-              final int orders = int.tryParse(item['orders']?.toString() ?? '0') ?? 0;
+              final double revenue =
+                  double.tryParse(item['revenue']?.toString() ?? '0') ?? 0.0;
+              final int orders =
+                  int.tryParse(item['orders']?.toString() ?? '0') ?? 0;
 
               final bool isTakeaway = type.toLowerCase() == 'takeaway';
 
@@ -1642,12 +1770,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: isTakeaway ? const Color(0xFFFEF3C7) : const Color(0xFFDBEAFE),
+                      color: isTakeaway
+                          ? const Color(0xFFFEF3C7)
+                          : const Color(0xFFDBEAFE),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      isTakeaway ? Icons.shopping_bag_rounded : Icons.table_restaurant_rounded,
-                      color: isTakeaway ? const Color(0xFFD97706) : const Color(0xFF2563EB),
+                      isTakeaway
+                          ? Icons.shopping_bag_rounded
+                          : Icons.table_restaurant_rounded,
+                      color: isTakeaway
+                          ? const Color(0xFFD97706)
+                          : const Color(0xFF2563EB),
                       size: 20,
                     ),
                   ),
@@ -1769,13 +1903,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: sortedCashiers.length,
-            separatorBuilder: (context, index) => const Divider(height: 20, color: Color(0xFFF1F5F9)),
+            separatorBuilder: (context, index) =>
+                const Divider(height: 20, color: Color(0xFFF1F5F9)),
             itemBuilder: (context, index) {
               final item = sortedCashiers[index];
               final String name = item['name']?.toString() ?? 'พนักงาน';
               final String avatarUrl = item['avatarUrl']?.toString() ?? '';
-              final double revenue = double.tryParse(item['revenue']?.toString() ?? '0') ?? 0.0;
-              final int orders = int.tryParse(item['orders']?.toString() ?? '0') ?? 0;
+              final double revenue =
+                  double.tryParse(item['revenue']?.toString() ?? '0') ?? 0.0;
+              final int orders =
+                  int.tryParse(item['orders']?.toString() ?? '0') ?? 0;
 
               return Row(
                 children: [
@@ -1790,8 +1927,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         color: index == 0
                             ? const Color(0xFFCA8A04) // ทอง
                             : index == 1
-                                ? const Color(0xFF64748B) // เงิน
-                                : const Color(0xFFCBD5E1),
+                            ? const Color(0xFF64748B) // เงิน
+                            : const Color(0xFFCBD5E1),
                         fontSize: 15,
                       ),
                     ),
@@ -1801,12 +1938,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   CircleAvatar(
                     radius: 18,
                     backgroundColor: const Color(0xFFEEF2FF),
-                    backgroundImage: avatarUrl.isNotEmpty && avatarUrl.startsWith('http')
+                    backgroundImage:
+                        avatarUrl.isNotEmpty && avatarUrl.startsWith('http')
                         ? NetworkImage(avatarUrl)
                         : null,
                     child: avatarUrl.isEmpty || !avatarUrl.startsWith('http')
                         ? Text(
-                            name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'P',
+                            name.isNotEmpty
+                                ? name.substring(0, 1).toUpperCase()
+                                : 'P',
                             style: const TextStyle(
                               color: Color(0xFF4F46E5),
                               fontWeight: FontWeight.bold,

@@ -26,11 +26,15 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
   bool _isLoading = true;
   bool _isLoadMoreLoading = false;
   String _errorMessage = '';
+  String _effectivePlan = 'free';
 
   // --- States ระบบฟิลเตอร์และเวลา ---
-  String _viewMode = 'day'; // day, month, year, custom
+  String _viewMode = 'custom'; // เปิดครั้งแรกเป็นช่วง 30 วันล่าสุด
   DateTime _currentDate = DateTime.now();
-  DateTimeRange? _customDateRange; // เก็บค่าเลือกช่วงวันที่ "เริ่ม -> สิ้นสุด"
+  DateTimeRange? _customDateRange = DateTimeRange(
+    start: DateTime.now().subtract(const Duration(days: 29)),
+    end: DateTime.now(),
+  );
 
   String _statusFilter = 'all';
   String _searchQuery = '';
@@ -155,6 +159,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
             }
             _page = targetPage;
             _hasMore = resData['hasMore'] ?? false;
+            _effectivePlan = resData['effectivePlan'] ?? 'free';
             _isLoading = false;
             _isLoadMoreLoading = false;
           });
@@ -196,16 +201,36 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
   }
 
   Future<void> _selectCustomDateRange() async {
+    final now = DateTime.now();
+    final isFreePlan = _effectivePlan == 'free';
+    final firstAllowedDate = isFreePlan
+        ? DateTime(
+            now.year,
+            now.month,
+            now.day,
+          ).subtract(const Duration(days: 29))
+        : DateTime(2020);
+    final currentRange =
+        _customDateRange ??
+        DateTimeRange(start: now.subtract(const Duration(days: 29)), end: now);
+    final initialEnd = currentRange.end.isBefore(firstAllowedDate)
+        ? now
+        : (currentRange.end.isAfter(now) ? now : currentRange.end);
+    final initialRange = DateTimeRange(
+      start: currentRange.start.isBefore(firstAllowedDate)
+          ? firstAllowedDate
+          : currentRange.start,
+      end: initialEnd,
+    );
+
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      initialDateRange:
-          _customDateRange ??
-          DateTimeRange(
-            start: DateTime.now().subtract(const Duration(days: 7)),
-            end: DateTime.now(),
-          ),
+      firstDate: firstAllowedDate,
+      lastDate: now,
+      initialDateRange: initialRange,
+      helpText: isFreePlan
+          ? 'เลือกช่วงเวลา (Free ดูย้อนหลังได้ 30 วัน)'
+          : 'เลือกช่วงเวลาประวัติการขาย',
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -847,52 +872,60 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
-                            children: ['day', 'month', 'year', 'custom'].map((
-                              mode,
-                            ) {
-                              final bool isModeSelected = _viewMode == mode;
-                              return GestureDetector(
-                                onTap: () {
-                                  if (mode == 'custom') {
-                                    _selectCustomDateRange();
-                                  } else {
-                                    setState(() {
-                                      _viewMode = mode;
-                                      _currentDate = DateTime.now();
-                                    });
-                                    _loadSessionAndFetch(isLoadMore: false);
-                                  }
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isModeSelected
-                                        ? const Color(0xFF0F172A)
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(7),
-                                  ),
-                                  child: Text(
-                                    mode == 'day'
-                                        ? 'วัน'
-                                        : mode == 'month'
-                                        ? 'เดือน'
-                                        : mode == 'year'
-                                        ? 'ปี'
-                                        : 'ช่วงเวลา',
-                                    style: TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.bold,
-                                      color: isModeSelected
-                                          ? Colors.white
-                                          : const Color(0xFF94A3B8),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
+                            children:
+                                (_effectivePlan == 'free'
+                                        ? ['day', 'custom']
+                                        : ['day', 'month', 'year', 'custom'])
+                                    .map((mode) {
+                                      final bool isModeSelected =
+                                          _viewMode == mode;
+                                      return GestureDetector(
+                                        onTap: () {
+                                          if (mode == 'custom') {
+                                            _selectCustomDateRange();
+                                          } else {
+                                            setState(() {
+                                              _viewMode = mode;
+                                              _currentDate = DateTime.now();
+                                            });
+                                            _loadSessionAndFetch(
+                                              isLoadMore: false,
+                                            );
+                                          }
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isModeSelected
+                                                ? const Color(0xFF0F172A)
+                                                : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(
+                                              7,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            mode == 'day'
+                                                ? 'วัน'
+                                                : mode == 'month'
+                                                ? 'เดือน'
+                                                : mode == 'year'
+                                                ? 'ปี'
+                                                : 'ช่วงเวลา',
+                                            style: TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: isModeSelected
+                                                  ? Colors.white
+                                                  : const Color(0xFF94A3B8),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    })
+                                    .toList(),
                           ),
                         ),
                         const SizedBox(width: 8),
