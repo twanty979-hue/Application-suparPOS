@@ -361,6 +361,7 @@ extension PosUiExtension on _PosScreenState {
                     calculatePrice: _calculatePrice,
                     formatCurrency: _formatCurrency,
                     showProductImages: _showProductImages,
+                    showProductNames: _showProductNames,
                     onCameraPressed: () {
                       BarcodeScannerModal.show(context, (scannedCode) {
                         _handleBarcodeScan(scannedCode);

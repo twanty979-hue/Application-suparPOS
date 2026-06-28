@@ -1,4 +1,4 @@
-// lib/screens/discount_screen.dart
+﻿// lib/screens/discount_screen.dart
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -163,7 +163,7 @@ class _DiscountScreenState extends State<DiscountScreen> {
         await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: Colors.white,
+            backgroundColor: const Color(0xFFFAF9F6),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -342,7 +342,7 @@ class _DiscountScreenState extends State<DiscountScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: const Color(0xFFFAF9F6), // เปลี่ยนเป็นสีขาวไข่ (Egg-white)
       drawer: const AppSidebar(activeMenu: 'discount'),
       floatingActionButton: SizedBox(
         width: 44,
@@ -388,7 +388,7 @@ class _DiscountScreenState extends State<DiscountScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: const Color(0xFFEDE9E3)),
                   ),
                   child: Row(
                     children: [
@@ -520,7 +520,7 @@ class _DiscountScreenState extends State<DiscountScreen> {
           border: Border.all(
             color: isSelected
                 ? const Color(0xFF0F172A)
-                : const Color(0xFFE2E8F0),
+                : const Color(0xFFEDE9E3),
           ),
         ),
         child: Text(
@@ -546,7 +546,7 @@ class _DiscountScreenState extends State<DiscountScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0).withOpacity(0.8)),
+        border: Border.all(color: const Color(0xFFEDE9E3).withOpacity(0.8)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -635,7 +635,7 @@ class _DiscountScreenState extends State<DiscountScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: const Color(0xFFFAF9F6),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
@@ -673,7 +673,7 @@ class _DiscountScreenState extends State<DiscountScreen> {
                 style: OutlinedButton.styleFrom(
                   padding: EdgeInsets.zero,
                   foregroundColor: const Color(0xFF64748B),
-                  side: const BorderSide(color: Color(0xFFE2E8F0)),
+                  side: const BorderSide(color: Color(0xFFEDE9E3)),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -731,3 +731,5 @@ class _DiscountScreenState extends State<DiscountScreen> {
     );
   }
 }
+
+

@@ -20,8 +20,8 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
 
   // กำหนดชุดสีหลักตาม Design เดียวกับ Profile
   final Color _bgColor = const Color(0xFFF4F7F9);
-  final Color _primaryBlue = const Color(0xFF4361EE);
-  final Color _textSecondary = const Color(0xFF8A94A6);
+  final Color _primaryBlue = const Color(0xFF292524);
+  final Color _textSecondary = const Color(0xFF64748B);
 
   Future<Map<String, String>> _headers() async => {
     'Content-Type': 'application/json',
@@ -183,9 +183,9 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
           elevation: 0,
           backgroundColor: Colors.transparent,
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFFFAF9F6),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
@@ -234,7 +234,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                   controller: email,
                   keyboardType: TextInputType.emailAddress,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
@@ -330,7 +330,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                                 found!['full_name'] ?? 'ยังไม่ระบุชื่อ',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontSize: 11,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -415,7 +415,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _primaryBlue,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -445,13 +445,13 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                               height: 20,
                               width: 20,
                               child: CupertinoActivityIndicator(
-                                color: Colors.white,
+                                color: const Color(0xFFFAF9F6),
                               ),
                             )
                           : const Text(
                               'ส่งคำเชิญเข้าร่วมร้าน',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -540,79 +540,82 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
       : 'พนักงาน';
 
   @override
+
+  Widget _buildHeader(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 430;
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        compact ? 12 : 16,
+        8,
+        compact ? 12 : 16,
+        8,
+      ),
+      decoration: const BoxDecoration(
+        color: Color(0xFFEDE9E3),
+      ),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Scaffold.of(context).openDrawer();
+              }
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFDCD6CB),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.groups_rounded,
+                color: Color(0xFF292524),
+                size: 20,
+              ),
+            ),
+          ),
+          SizedBox(width: compact ? 12 : 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'จัดการพนักงาน',
+                  style: TextStyle(
+                    color: Color(0xFF292524),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'จัดการสิทธิ์และข้อมูลพนักงาน',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: const Color(0xFFEDE9E3),
       body: SafeArea(
         child: Column(
           children: [
-            // Custom Header แบบเดียวกับ Profile
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Material(
-                        color: _primaryBlue,
-                        borderRadius: BorderRadius.circular(12),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkWell(
-                          onTap: () => Navigator.of(context).pop(),
-                          splashColor: Colors.white.withOpacity(0.3),
-                          highlightColor: Colors.white.withOpacity(0.1),
-                          child: const SizedBox(
-                            width: 42,
-                            height: 42,
-                            child: Icon(
-                              Icons.grid_view_rounded,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'จัดการพนักงาน',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            'ทีมงานของร้านคุณ',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: _textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  // ปุ่ม Refresh ด้านขวา
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: _loading ? null : _load,
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        child: Icon(Icons.refresh, color: _textSecondary),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
+            _buildHeader(context),
             // เนื้อหาหลัก (List พนักงาน)
             Expanded(
               child: _loading
@@ -625,15 +628,15 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                               children: [
                                 const SizedBox(height: 120),
                                 Container(
-                                  padding: const EdgeInsets.all(24),
+                                  padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
+                                    color: const Color(0xFFEDE9E3),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
                                     Icons.groups_outlined,
                                     size: 64,
-                                    color: Colors.blue.shade300,
+                                    color: const Color(0xFFDCD6CB),
                                   ),
                                 ),
                                 const SizedBox(height: 24),
@@ -641,7 +644,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                                   child: Text(
                                     'ยังไม่มีพนักงานในร้าน',
                                     style: TextStyle(
-                                      fontSize: 18,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.black87,
                                     ),
@@ -675,10 +678,10 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                                 );
 
                                 return Container(
-                                  margin: const EdgeInsets.only(bottom: 16),
+                                  margin: const EdgeInsets.only(bottom: 10),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
+                                    color: const Color(0xFFFAF9F6),
+                                    borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withOpacity(0.02),
@@ -689,11 +692,11 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                                   ),
                                   child: ListTile(
                                     contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
+                                      horizontal: 14,
+                                      vertical: 6,
                                     ),
                                     leading: CircleAvatar(
-                                      radius: 24,
+                                      radius: 20,
                                       backgroundColor: const Color(0xFFF1F5F9),
                                       backgroundImage:
                                           avatar != null && avatar.isNotEmpty
@@ -712,7 +715,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                                           'พนักงาน',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                                        fontSize: 13,
                                         color: Colors.black87,
                                       ),
                                     ),
@@ -720,16 +723,14 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                                       padding: const EdgeInsets.only(top: 6),
                                       // ใช้ Wrap แทน Row เพื่อแก้ปัญหา Overflow
                                       child: Wrap(
-                                        spacing:
-                                            8.0, // ระยะห่างแนวนอนระหว่าง Badge
-                                        runSpacing:
-                                            8.0, // ระยะห่างแนวตั้งเมื่อขึ้นบรรทัดใหม่
+                                        spacing: 6.0, // ระยะห่างแนวนอนระหว่าง Badge
+                                        runSpacing: 6.0, // ระยะห่างแนวตั้งเมื่อขึ้นบรรทัดใหม่
                                         children: [
                                           // Badge บอกตำแหน่ง
                                           Container(
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
+                                              horizontal: 6,
+                                              vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
                                               color: _bgColor,
@@ -739,7 +740,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                                             child: Text(
                                               roleName,
                                               style: TextStyle(
-                                                fontSize: 12,
+                                                fontSize: 11,
                                                 fontWeight: FontWeight.w600,
                                                 color: _textSecondary,
                                               ),
@@ -748,8 +749,8 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                                           // Badge บอกสถานะ
                                           Container(
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
+                                              horizontal: 6,
+                                              vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
                                               color: pending
@@ -813,20 +814,12 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
         ),
       ),
       // ปุ่มลอย (Floating Action Button) แบบทันสมัย
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: _primaryBlue,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF292524), // ใช้สีโทนเข้ม
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         onPressed: _inviteDialog,
-        icon: const Icon(Icons.person_add_rounded, color: Colors.white),
-        label: const Text(
-          'เพิ่มพนักงาน',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-          ),
-        ),
+        child: const Icon(Icons.person_add_rounded, color: Colors.white),
       ),
     );
   }

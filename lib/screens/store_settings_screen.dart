@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_cropper/image_cropper.dart';
@@ -35,11 +36,9 @@ class StoreSettingsScreen extends StatefulWidget {
 }
 
 class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
-  static const _ink = Color(0xFF0F172A); // Slate 900
-  static const _surface = Colors.white;
-  static const _bg = Color(
-    0xFFF8FAFC,
-  ); // พื้นหลังรวมสีเทาขาวสว่างๆ ให้การ์ดสีขาวดูลอย
+  static const _ink = Color(0xFF292524); // ดำอมน้ำตาล
+  static const _surface = Color(0xFFFAF9F6); // ขาวไข่
+  static const _bg = Color(0xFFEDE9E3); // พื้นหลังขาวไข่เข้ม
 
   // สีสดใสสำหรับ Icon และ Glow Effect
   static const _vibrantBlue = Color(0xFF3B82F6);
@@ -50,6 +49,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isUploadingLogo = false;
+  Uint8List? _pendingLogoBytes;
   bool _isOwner = false;
   int _activeTab = 0;
   String _currentPlan = 'FREE';
@@ -63,6 +63,17 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _promptpayController = TextEditingController();
+
+  String _initialName = '';
+  String _initialPhone = '';
+  String _initialPromptpay = '';
+  String? _initialLogoUrl;
+
+  bool get _hasUnsavedChanges => _pendingLogoBytes != null || 
+      _nameController.text != _initialName ||
+      _phoneController.text != _initialPhone ||
+      _promptpayController.text != _initialPromptpay ||
+      _logoUrl != _initialLogoUrl;
 
   late ConfettiController _confettiController;
 
@@ -118,6 +129,34 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
         },
       );
 
+      
+      // Upload pending logo if exists
+      if (_pendingLogoBytes != null) {
+        setState(() => _isUploadingLogo = true);
+        final request = http.MultipartRequest('POST', Uri.parse('/logo'))
+          ..headers['Authorization'] = 'Bearer '
+          ..files.add(http.MultipartFile.fromBytes('file', _pendingLogoBytes!, filename: 'logo.webp'));
+          
+        final streamedResponse = await request.send();
+        final responseBody = await streamedResponse.stream.bytesToString();
+        final responseData = responseBody.isNotEmpty ? jsonDecode(responseBody) as Map<String, dynamic> : <String, dynamic>{};
+        
+        if (streamedResponse.statusCode == 200 && responseData['success'] == true) {
+          // Delete old cache and save new one
+          await _saveLocalLogoBytes(_pendingLogoBytes!);
+          if (mounted) {
+            setState(() {
+              _logoUrl = responseData['logo_url']?.toString();
+              _initialLogoUrl = _logoUrl;
+              _pendingLogoBytes = null;
+            });
+          }
+        } else {
+          throw responseData['error'] ?? 'อัปโหลดโลโก้ไม่สำเร็จ';
+        }
+        setState(() => _isUploadingLogo = false);
+      }
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
@@ -148,6 +187,12 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
               if (expiryString != null) {
                 _planExpiryDate = DateTime.tryParse(expiryString);
               }
+              
+              _initialName = _nameController.text;
+              _initialPhone = _phoneController.text;
+              _initialPromptpay = _promptpayController.text;
+              _initialLogoUrl = _logoUrl;
+              
               _isLoading = false;
             });
             unawaited(_cacheLogoFromUrl(_logoUrl));
@@ -245,11 +290,10 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
     );
   }
 
-  Future<void> _pickAndUploadLogo() async {
+  
+  Future<void> _pickLogo() async {
     if (!_isOwner || _isUploadingLogo) return;
 
-    setState(() => _isUploadingLogo = true);
-    var localLogoSaved = false;
     try {
       final pickedFile = await ImagePicker().pickImage(
         source: ImageSource.gallery,
@@ -270,73 +314,24 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
         throw 'แปลงโลโก้เป็น WebP ไม่สำเร็จ';
       }
 
-      await _saveLocalLogoBytes(webpBytes);
-      localLogoSaved = true;
-
-      final request =
-          http.MultipartRequest(
-              'POST',
-              Uri.parse('${ApiService.settings}/logo'),
-            )
-            ..headers['Authorization'] = 'Bearer $_accessToken'
-            ..files.add(
-              http.MultipartFile.fromBytes(
-                'file',
-                webpBytes,
-                filename: 'logo.webp',
-              ),
-            );
-
-      final streamedResponse = await request.send();
-      final responseBody = await streamedResponse.stream.bytesToString();
-      final responseData = responseBody.isNotEmpty
-          ? jsonDecode(responseBody) as Map<String, dynamic>
-          : <String, dynamic>{};
-
-      if (streamedResponse.statusCode != 200 ||
-          responseData['success'] != true) {
-        debugPrint(
-          '[Store Logo] Cloud upload failed status=${streamedResponse.statusCode} body=$responseBody',
-        );
-        throw responseData['error'] ??
-            'อัปโหลดโลโก้ไม่สำเร็จ (${streamedResponse.statusCode})';
-      }
-
       if (mounted) {
-        setState(() => _logoUrl = responseData['logo_url']?.toString());
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('อัปเดตโลโก้ร้านเรียบร้อยแล้ว'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        setState(() {
+          _pendingLogoBytes = webpBytes;
+        });
       }
     } catch (e) {
       if (mounted) {
-        if (localLogoSaved) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'บันทึกโลโก้ในเครื่องแล้ว แต่ซิงก์ขึ้น Cloud ยังไม่สำเร็จ: $e',
-              ),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return;
-        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('อัปโหลดโลโก้ไม่สำเร็จ: $e'),
+            content: Text('เกิดข้อผิดพลาดในการเลือกรูปภาพ: '),
             backgroundColor: Colors.red,
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isUploadingLogo = false);
     }
   }
 
-  Future<void> _saveSettings() async {
+Future<void> _saveSettings() async {
     if (!_isOwner) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -365,6 +360,11 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
 
       if (response.statusCode == 200) {
         if (mounted) {
+          setState(() {
+            _initialName = _nameController.text;
+            _initialPhone = _phoneController.text;
+            _initialPromptpay = _promptpayController.text;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('บันทึกข้อมูลเรียบร้อย'),
@@ -458,86 +458,60 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
     IconData? prefixIcon,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 8), // ลดระยะห่างให้ชิดขึ้นอีก
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 11, // เล็กลงอีก
               fontWeight: FontWeight.w800,
-              color: _ink,
+              color: Color(0xFF292524),
             ),
           ),
-          const SizedBox(height: 8),
-          // 🌟 ใส่เงาให้ช่องกรอกข้อความ เพื่อให้ดูมีมิติ ไม่แบนราบ
+          const SizedBox(height: 4),
           Container(
             decoration: BoxDecoration(
-              color: enabled ? Colors.white : const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: enabled
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : [],
+              color: enabled ? _surface : const Color(0xFFEDE9E3),
+              borderRadius: BorderRadius.circular(8), // โค้งน้อยลงอีก
+              border: Border.all(
+                color: const Color(0xFFDCD6CB),
+                width: 1,
+              ),
             ),
             child: TextField(
               controller: controller,
               maxLines: maxLines,
               enabled: enabled,
               style: const TextStyle(
-                color: _ink,
-                fontSize: 16,
+                color: Color(0xFF292524),
+                fontSize: 12, // เล็กลงอีก
                 fontWeight: FontWeight.w700,
               ),
               decoration: InputDecoration(
+                isDense: true, // ทำให้ช่องกรอกเล็กลงได้อีก
                 hintText: hintText,
                 hintStyle: const TextStyle(
                   color: Color(0xFF94A3B8),
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
+                prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 prefixIcon: prefixIcon == null
                     ? null
                     : Icon(
                         prefixIcon,
                         color: const Color(0xFF64748B),
-                        size: 22,
+                        size: 14, // เล็กลงอีก
                       ),
                 filled: true,
-                fillColor: Colors
-                    .transparent, // ใช้สีโปร่งใส เพราะเราใช้สีจาก Container แทน
+                fillColor: Colors.transparent,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 16,
+                  horizontal: 10,
+                  vertical: 8, // บีบให้บางลง
                 ),
-                // 🌟 เส้นขอบบางเฉียบ เพื่อความพรีเมียม
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFE2E8F0),
-                    width: 0.5,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFE2E8F0),
-                    width: 0.5,
-                  ),
-                ),
-                disabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(14)),
-                  borderSide: BorderSide(color: _vibrantBlue, width: 2.0),
-                ),
+                border: InputBorder.none,
               ),
             ),
           ),
@@ -549,134 +523,137 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
   Widget _buildHeader(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 430;
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        compact ? 12 : 16,
-        12,
-        compact ? 12 : 16,
-        12,
-      ),
-      decoration: BoxDecoration(
-        color: _surface,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: Color(0xFFEDE9E3),
+        border: Border(bottom: BorderSide(color: Color(0xFFDCD6CB))),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
+            color: Color(0x0A0B1730),
+            blurRadius: 14,
+            offset: Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          InkWell(
-            onTap: () => Scaffold.of(context).openDrawer(),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: _ink,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.tune_rounded,
-                color: Colors.white,
-                size: 22,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Row(
+          children: [
+            Material(
+              color: const Color(0xFF292524),
+              borderRadius: BorderRadius.circular(13),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(13),
+                onTap: () => Scaffold.of(context).openDrawer(),
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(13),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x1A0B1730),
+                        blurRadius: 14,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.menu,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
               ),
             ),
-          ),
-          SizedBox(width: compact ? 8 : 14),
-          const Expanded(
-            child: Text(
-              '',
-              style: TextStyle(
-                color: _ink,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.5,
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'ตั้งค่า',
+                style: TextStyle(
+                  color: Color(0xFF292524),
+                  fontSize: 21,
+                  fontWeight: FontWeight.w900,
+                  fontStyle: FontStyle.italic,
+                  height: 0.95,
+                  letterSpacing: -0.5,
+                ),
               ),
             ),
-          ),
-          Flexible(
-            child: Container(
-              constraints: BoxConstraints(maxWidth: compact ? 92 : 150),
-              padding: EdgeInsets.symmetric(
-                horizontal: compact ? 9 : 14,
-                vertical: 8,
-              ),
-              margin: EdgeInsets.only(right: compact ? 8 : 12),
+            const SizedBox(width: 8),
+            Container(
+              height: 35,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFFFFBEB),
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: const Color(0xFFFDE68A), width: 1.5),
+                border: Border.all(color: const Color(0xFFF8D986)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0FF59E0B),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.paid_rounded,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'lib/assets/cion.png',
+                    width: 19,
+                    height: 19,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.monetization_on,
                       color: Color(0xFFF59E0B),
                       size: 18,
                     ),
-                    const SizedBox(width: 5),
-                    Text(
-                      NumberFormat('#,###').format(_coins),
-                      style: const TextStyle(
-                        color: Color(0xFFB45309),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                      ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    NumberFormat('#,###').format(_coins),
+                    style: const TextStyle(
+                      color: Color(0xFFB45309),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ),
-          SizedBox(
-            width: compact ? 42 : null,
-            height: 42,
-            child: ElevatedButton(
-              onPressed: _isSaving ? null : _saveSettings,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _ink,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: const Color(0xFFCBD5E1),
-                elevation: 3,
-                shadowColor: _ink.withOpacity(0.25),
-                padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.check_rounded, size: 19),
-                        if (!compact) ...[
-                          const SizedBox(width: 7),
-                          const Text(
-                            'บันทึก',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w900,
-                            ),
+            const SizedBox(width: 8),
+            Material(
+              color: const Color(0xFF292524),
+              borderRadius: BorderRadius.circular(13),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(13),
+                onTap: _isSaving ? null : _saveSettings,
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  alignment: Alignment.center,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
                           ),
-                        ],
-                      ],
-                    ),
+                        )
+                      : const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -686,7 +663,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
       height: 56,
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9), // สีเทาอ่อนๆ
+        color: const Color(0xFFEDE9E3), // สีเทาอ่อนๆ (เข้มขึ้นจากเดิม)
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -709,7 +686,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
           curve: Curves.easeOut,
           height: double.infinity,
           decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.transparent,
+            color: isActive ? const Color(0xFF292524) : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             // 🌟 แท็บที่ถูกเลือกจะลอยขึ้นมาอย่างสวยงาม
             boxShadow: isActive
@@ -727,14 +704,14 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
             children: [
               Icon(
                 icon,
-                color: isActive ? _vibrantBlue : const Color(0xFF64748B),
+                color: isActive ? Colors.white : const Color(0xFF64748B),
                 size: 18,
               ),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: TextStyle(
-                  color: isActive ? _ink : const Color(0xFF64748B),
+                  color: isActive ? Colors.white : const Color(0xFF64748B),
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
                 ),
@@ -773,13 +750,16 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
   }
 
   Widget _buildQuickActionMenu() {
+    final plan = _currentPlan.trim().toLowerCase();
+    final isPro = plan == 'pro' || plan == 'ultimate';
+
     return Row(
       children: [
         Expanded(
           child: _buildMenuButton(
             icon: Icons.point_of_sale_rounded,
-            color: _vibrantBlue,
-            bgColor: const Color(0xFFEFF6FF),
+            color: const Color(0xFF1E293B), // น้ำเงินหม่นเข้ม (Slate)
+            bgColor: Colors.white, // พื้นหลังขาวสะอาด
             title: 'คิดเงิน',
             onTap: () => _openWithLargeLoader(
               PosOptionsSettingsScreen(brandId: widget.brandId),
@@ -790,8 +770,8 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
         Expanded(
           child: _buildMenuButton(
             icon: Icons.receipt_long_rounded,
-            color: _vibrantOrange,
-            bgColor: const Color(0xFFFEF3C7),
+            color: const Color(0xFF78350F), // ส้มน้ำตาลเข้ม (Amber/Brown)
+            bgColor: Colors.white,
             title: 'ใบเสร็จ',
             onTap: () => _openWithLargeLoader(
               ReceiptSettingsScreen(brandId: widget.brandId),
@@ -802,8 +782,8 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
         Expanded(
           child: _buildMenuButton(
             icon: Icons.account_balance_wallet_rounded,
-            color: _vibrantGreen,
-            bgColor: const Color(0xFFD1FAE5),
+            color: const Color(0xFF14532D), // เขียวหม่นเข้ม (Forest Green)
+            bgColor: Colors.white,
             title: 'ชำระเงิน',
             onTap: () => _openWithLargeLoader(const PaymentHistoryScreen()),
           ),
@@ -812,10 +792,11 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
         Expanded(
           child: _buildMenuButton(
             icon: Icons.groups_rounded,
-            color: _vibrantViolet,
-            bgColor: const Color(0xFFEEF2FF),
+            color: const Color(0xFF312E81), // ม่วงหม่นเข้ม (Indigo)
+            bgColor: Colors.white,
             title: 'พนักงาน',
             onTap: _openStaffManagement,
+            isLocked: !isPro,
           ),
         ),
       ],
@@ -875,18 +856,23 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
     required Color bgColor,
     required String title,
     required VoidCallback onTap,
+    bool isLocked = false,
   }) {
+    final activeColor = isLocked ? const Color(0xFF94A3B8) : color;
+    final activeBg = isLocked ? const Color(0xFFE2E8F0) : bgColor;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFEDE9E3), // ขาวไข่เข้ม
         borderRadius: BorderRadius.circular(16),
-        // 🌟 Glowing Shadow! เงาสะท้อนสีเดียวกับปุ่มแบบบางๆ (สไตล์เว็บ Vercel/Stripe)
-        boxShadow: [
+        border: Border.all(color: const Color(0xFFDCD6CB)),
+        // 🌟 เงาบางๆ สะอาดๆ แบบมินิมอล เข้ากับตีม
+        boxShadow: isLocked ? null : [
           BoxShadow(
-            color: color.withOpacity(0.12),
-            blurRadius: 12,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
             spreadRadius: 0,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -901,21 +887,41 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
+                Stack(
+                  clipBehavior: Clip.none,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Icon(icon, color: color, size: 20),
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: activeBg,
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      child: Icon(icon, color: activeColor, size: 20),
+                    ),
+                    if (isLocked)
+                      Positioned(
+                        bottom: -4,
+                        right: -4,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF292524),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFEDE9E3), width: 1.5),
+                          ),
+                          child: const Icon(Icons.lock_rounded, color: Colors.white, size: 10),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 7),
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: _ink,
+                  style: TextStyle(
+                    color: isLocked ? const Color(0xFF94A3B8) : _ink,
                     fontSize: 10.5,
                     height: 1.1,
                     fontWeight: FontWeight.w900,
@@ -950,76 +956,37 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
         children: [
           _buildCardTitle(
             icon: Icons.storefront_outlined,
-            iconColor: _vibrantBlue,
-            iconBg: const Color(0xFFEFF6FF),
+            iconColor: const Color(0xFF292524), // ดำอมน้ำตาล
+            iconBg: const Color(0xFFE8E4DD),
             title: 'ข้อมูลร้านค้า',
           ),
-          const SizedBox(height: 24),
-          _buildLogoPicker(),
-          const SizedBox(height: 24),
-          _buildTextField('ชื่อร้านค้า *', _nameController, enabled: _isOwner),
-          _buildTextField(
-            'เบอร์โทรศัพท์ติดต่อ',
-            _phoneController,
-            hintText: '08x-xxx-xxxx',
-            prefixIcon: Icons.phone_outlined,
-            enabled: _isOwner,
-          ),
-
-          const Divider(color: Color(0xFFF1F5F9), height: 40, thickness: 1.5),
-
+          const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'รับชำระเงิน (PromptPay)',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: _ink,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: const Color(0xFF6EE7B7),
-                    width: 1.5,
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
+              _buildLogoPicker(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
                   children: [
-                    Icon(
-                      Icons.lock_outline_rounded,
-                      color: Color(0xFF059669),
-                      size: 14,
+                    _buildTextField('ชื่อร้านค้า *', _nameController, enabled: _isOwner),
+                    _buildTextField(
+                      'เบอร์โทรศัพท์ติดต่อ',
+                      _phoneController,
+                      hintText: '08x-xxx-xxxx',
+                      prefixIcon: Icons.phone_outlined,
+                      enabled: _isOwner,
                     ),
-                    SizedBox(width: 4),
-                    Text(
-                      'ปลอดภัย',
-                      style: TextStyle(
-                        color: Color(0xFF059669),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                      ),
+                    _buildTextField(
+                      'PromptPay ID (เบอร์โทร / เลขบัตร)',
+                      _promptpayController,
+                      enabled: _isOwner,
+                      prefixIcon: Icons.credit_card_outlined,
                     ),
                   ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 20),
-          _buildTextField(
-            'PromptPay ID (เบอร์โทร / เลขบัตร)',
-            _promptpayController,
-            enabled: _isOwner,
-            prefixIcon: Icons.credit_card_outlined,
           ),
         ],
       ),
@@ -1032,87 +999,100 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
     final hasLogo =
         hasLocalLogo || (_logoUrl != null && _logoUrl!.trim().isNotEmpty);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          width: 96,
-          height: 96,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+    return GestureDetector(
+      onTap: _isOwner && !_isUploadingLogo ? _pickLogo : null,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDE9E3),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFDCD6CB)),
+            ),
+            child: _isUploadingLogo
+                ? const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF292524))))
+                : _pendingLogoBytes != null
+                    ? Image.memory(_pendingLogoBytes!, fit: BoxFit.cover)
+                    : hasLogo
+                        ? hasLocalLogo
+                              ? Image.file(localLogo, fit: BoxFit.cover)
+                              : Image.network(
+                                  _logoUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Image.asset(
+                                    'lib/assets/app_logo.png',
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                        : Image.asset(
+                            'lib/assets/app_logo.png',
+                            fit: BoxFit.cover,
+                          ),
           ),
-          child: hasLogo
-              ? hasLocalLogo
-                    ? Image.file(localLogo, fit: BoxFit.cover)
-                    : Image.network(
-                        _logoUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Image.asset(
-                          'lib/assets/app_logo.png',
-                          fit: BoxFit.cover,
-                        ),
-                      )
-              : Image.asset(
-                  'lib/assets/app_logo.png',
-                  fit: BoxFit.cover,
+          if (_isOwner)
+            Positioned(
+              bottom: -4,
+              left: -4, // ดินสอตรงมุมล่างซ้ายตามที่ขอ
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF292524),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFFAF9F6), width: 1.5),
                 ),
-        ),
-        const SizedBox(width: 18),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'โลโก้ร้าน',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: _ink,
-                ),
+                child: const Icon(Icons.edit_rounded, color: Colors.white, size: 12),
               ),
-              const SizedBox(height: 5),
-              const Text(
-                'รองรับ JPG, PNG และ WebP ขนาดไม่เกิน 5 MB',
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.4,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: _isOwner && !_isUploadingLogo
-                    ? _pickAndUploadLogo
-                    : null,
-                icon: _isUploadingLogo
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.image_outlined, size: 18),
-                label: Text(
-                  _isUploadingLogo
-                      ? 'กำลังอัปโหลด...'
-                      : hasLogo
-                      ? 'เปลี่ยนโลโก้'
-                      : 'เลือกรูปโลโก้',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+            ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (!_hasUnsavedChanges) {
+          Navigator.of(context).pop();
+          return;
+        }
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('ยังไม่ได้บันทึกข้อมูล', style: TextStyle(fontWeight: FontWeight.bold, color: _ink)),
+            content: const Text('คุณมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก ต้องการบันทึกก่อนออกจากหน้านี้หรือไม่?', style: TextStyle(color: _ink)),
+            backgroundColor: _surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('ทิ้งการเปลี่ยนแปลง', style: TextStyle(color: Colors.red)),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _ink,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('บันทึก', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+        if (confirm == true) {
+          await _saveSettings();
+          if (mounted) Navigator.of(context).pop();
+        } else if (confirm == false) {
+          if (mounted) Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
       backgroundColor: _bg, // ใช้สีเทาขาว เพื่อดันให้การ์ดสีขาวดูลอยเด่น
       drawer: const AppSidebar(activeMenu: 'settings'),
       body: Stack(
@@ -1182,7 +1162,7 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Path drawStar(Size size) {
@@ -1212,3 +1192,4 @@ class _StoreSettingsScreenState extends State<StoreSettingsScreen> {
     return path;
   }
 }
+

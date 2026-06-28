@@ -1,4 +1,4 @@
-// lib/screens/receipt_history_screen.dart
+﻿// lib/screens/receipt_history_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -282,9 +282,9 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
+                          color: const Color(0xFFFAF9F6),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(color: const Color(0xFFEDE9E3)),
                         ),
                         child: const Text(
                           'History',
@@ -303,7 +303,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                   ),
                 ],
               ),
-              const Divider(color: Color(0xFFF1F5F9)),
+              const Divider(color: Color(0xFFFAF9F6)),
               Expanded(
                 child: SingleChildScrollView(
                   child: Container(
@@ -312,7 +312,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: const Color(0xFFEDE9E3)),
                     ),
                     child: Column(
                       children: [
@@ -354,7 +354,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                         ),
                         const Divider(
                           height: 24,
-                          color: Color(0xFFE2E8F0),
+                          color: Color(0xFFEDE9E3),
                           thickness: 1,
                         ),
                         ListView.builder(
@@ -424,7 +424,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                         ),
                         const Divider(
                           height: 24,
-                          color: Color(0xFFE2E8F0),
+                          color: Color(0xFFEDE9E3),
                           thickness: 1,
                         ),
                         if (totalSaved > 0)
@@ -547,7 +547,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                         // 🔥 จบส่วนที่เติม
                         const Divider(
                           height: 24,
-                          color: Color(0xFFE2E8F0),
+                          color: Color(0xFFEDE9E3),
                           thickness: 1,
                         ),
                         Row(
@@ -680,6 +680,89 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
     );
   }
 
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      decoration: const BoxDecoration(
+        color: Color(0xFFEDE9E3), // ขาวไข่เข้ม
+      ),
+      child: Row(
+        children: [
+          Material(
+            color: const Color(0xFF292524),
+            borderRadius: BorderRadius.circular(13),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(13),
+              onTap: () => _scaffoldKey.currentState?.openDrawer(),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x1A0B1730),
+                      blurRadius: 14,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.receipt_long_outlined,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ประวัติการขาย',
+                  style: TextStyle(
+                    color: Color(0xFF292524),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'ตรวจสอบใบเสร็จและยอดขาย',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 36,
+            height: 36,
+            child: IconButton.filledTonal(
+              padding: EdgeInsets.zero,
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF64748B),
+                side: const BorderSide(color: Color(0xFFEDE9E3)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              onPressed: () => _loadSessionAndFetch(isLoadMore: false),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final displayedReceipts = _receipts.where((rpt) {
@@ -712,80 +795,12 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFFAF9F6),
       drawer: const AppSidebar(activeMenu: 'receipt_history'),
       body: SafeArea(
         child: Column(
           children: [
-            // --- 🍔 แฮมเบอร์เกอร์เปิดเมนูด้านซ้าย ---
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => _scaffoldKey.currentState?.openDrawer(),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.menu_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'ประวัติการขาย',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                    ],
-                  ),
-                  GestureDetector(
-                    onTap: () => _loadSessionAndFetch(isLoadMore: false),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.refresh_rounded,
-                            size: 16,
-                            color: Color(0xFF64748B),
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'รีเฟรช',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildHeader(context),
 
             // --- 📅 บาร์ส่วนหัวเลือก วัน/เดือน/ปี/ช่วงเวลา ---
             Padding(
@@ -795,7 +810,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: const Color(0xFFEDE9E3)),
                 ),
                 child: Column(
                   children: [
@@ -804,7 +819,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                         Container(
                           padding: const EdgeInsets.all(3),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
+                            color: const Color(0xFFFAF9F6),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
@@ -882,7 +897,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                         ),
                       ],
                     ),
-                    const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                    const Divider(height: 24, color: Color(0xFFFAF9F6)),
 
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -914,9 +929,9 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: const Color(0xFFFAF9F6),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: const Color(0xFFEDE9E3)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -946,9 +961,9 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: const Color(0xFFFAF9F6),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(color: const Color(0xFFEDE9E3)),
                       ),
                       child: Row(
                         children: [
@@ -1038,7 +1053,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   side: const BorderSide(
-                                    color: Color(0xFFE2E8F0),
+                                    color: Color(0xFFEDE9E3),
                                   ),
                                 ),
                                 onPressed: _isLoadMoreLoading
@@ -1090,7 +1105,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                               border: Border.all(
                                 color: isVoided
                                     ? const Color(0xFFFFE4E6)
-                                    : const Color(0xFFE2E8F0),
+                                    : const Color(0xFFEDE9E3),
                               ),
                             ),
                             child: Row(
@@ -1150,7 +1165,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                                               decoration: BoxDecoration(
                                                 color: isVoided
                                                     ? const Color(0xFFFFE4E6)
-                                                    : const Color(0xFFF1F5F9),
+                                                    : const Color(0xFFFAF9F6),
                                                 borderRadius:
                                                     BorderRadius.circular(6),
                                               ),
@@ -1229,7 +1244,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
                                       decoration: BoxDecoration(
                                         color: isVoided
                                             ? const Color(0xFFFECDD3)
-                                            : const Color(0xFFF1F5F9),
+                                            : const Color(0xFFFAF9F6),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
@@ -1285,7 +1300,7 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? activeBgColor : const Color(0xFFF1F5F9),
+          color: isSelected ? activeBgColor : const Color(0xFFFAF9F6),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
@@ -1300,3 +1315,4 @@ class _ReceiptHistoryScreenState extends State<ReceiptHistoryScreen> {
     );
   }
 }
+

@@ -77,7 +77,7 @@ class _ProductsTopBarState extends State<ProductsTopBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: const Color(0xFFEDE9E3), // ขาวไข่แบบเข้ม
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
@@ -87,10 +87,10 @@ class _ProductsTopBarState extends State<ProductsTopBar> {
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: const Color(0xFFDCD6CB), // สีขาวไข่เข้มขึ้นอีกสเต็ป
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.menu_rounded, color: Color(0xFF2563EB)),
+              child: const Icon(Icons.menu_rounded, color: Color(0xFF292524)), // สีดำออกน้ำตาล
             ),
           ),
           const SizedBox(width: 12),
@@ -112,7 +112,7 @@ class _ProductsTopBarState extends State<ProductsTopBar> {
                   height: compact ? 42 : 46,
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
+                    color: const Color(0xFFDCD6CB), // สีขาวไข่เข้มขึ้นอีกสเต็ป
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Stack(
@@ -127,11 +127,11 @@ class _ProductsTopBarState extends State<ProductsTopBar> {
                         width: activeIdx >= 0 ? activeW : 0,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB),
+                            color: const Color(0xFF292524), // ดำน้ำตาล
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF2563EB).withOpacity(0.3),
+                                color: const Color(0xFF292524).withOpacity(0.3),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               )

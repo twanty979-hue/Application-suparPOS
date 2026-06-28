@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:intl/intl.dart';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -22,7 +23,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   static const Color _ink = Color(0xFF0B1730);
-  static const Color _pageBg = Color(0xFFF8FAFC);
+  static const Color _pageBg = const Color(0xFFEDE9E3);
   static const Color _line = Color(0xFFE2E8F0);
   static const Color _muted = Color(0xFF94A3B8);
 
@@ -237,8 +238,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFEAF0F6))),
+        color: Color(0xFFEDE9E3),
+        border: Border(bottom: BorderSide(color: Color(0xFFDCD6CB))),
         boxShadow: [
           BoxShadow(
             color: Color(0x0A0B1730),
@@ -248,7 +249,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Row(
           children: [
             Material(
@@ -356,7 +357,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           ),
           const SizedBox(width: 6),
           Text(
-            userCoins.toString(),
+            NumberFormat('#,###').format(userCoins),
             style: const TextStyle(
               color: Color(0xFFB45309),
               fontWeight: FontWeight.w900,
@@ -374,7 +375,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       clipBehavior: Clip.none,
       children: [
         Material(
-          color: hasFilter ? _ink : Colors.white,
+          color: const Color(0xFF0B1730),
           borderRadius: BorderRadius.circular(13),
           child: InkWell(
             borderRadius: BorderRadius.circular(13),
@@ -384,11 +385,11 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               height: 42,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(13),
-                border: Border.all(color: hasFilter ? _ink : _line),
+                border: Border.all(color: const Color(0xFF0B1730)),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.tune_rounded,
-                color: hasFilter ? Colors.white : const Color(0xFF64748B),
+                color: Colors.white,
                 size: 20,
               ),
             ),
@@ -627,8 +628,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               spacing: 7,
               runSpacing: 7,
               children: [
-                _buildSmallPill('SHOWING $pageCount RESULTS'),
-                _buildSmallPill('PAGE $currentPage/$totalPages'),
                 if (selectedTier != 'ALL') _buildSmallPill(selectedTier),
                 if (selectedCategoryId != 'ALL')
                   _buildSmallPill(_categoryName(selectedCategoryId)),
@@ -738,14 +737,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         child: Container(
           padding: const EdgeInsets.fromLTRB(9, 8, 9, 8),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.96),
+            color: const Color(0xFF292524),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: _line),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x240B1730),
-                blurRadius: 24,
-                offset: Offset(0, 12),
+                color: Color(0x33000000),
+                blurRadius: 16,
+                offset: Offset(0, 8),
               ),
             ],
           ),
@@ -767,7 +765,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                           child: Text(
                             '...',
                             style: TextStyle(
-                              color: _muted,
+                              color: Color(0xFF94A3B8),
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -793,7 +791,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Material(
-        color: selected ? _ink : Colors.transparent,
+        color: selected ? Colors.white : Colors.transparent,
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -805,7 +803,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               child: Text(
                 page.toString(),
                 style: TextStyle(
-                  color: selected ? Colors.white : _muted,
+                  color: selected ? const Color(0xFF292524) : const Color(0xFF94A3B8),
                   fontWeight: FontWeight.w900,
                   fontSize: 10.5,
                 ),
@@ -823,7 +821,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     required VoidCallback onTap,
   }) {
     return Material(
-      color: const Color(0xFFF1F5F9),
+      color: Colors.transparent,
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -833,7 +831,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           height: 31,
           child: Icon(
             icon,
-            color: enabled ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+            color: enabled ? Colors.white : const Color(0xFF475569),
             size: 17,
           ),
         ),
@@ -933,63 +931,32 @@ class _ThemeCardItemState extends State<ThemeCardItem> {
     final priceInfo = _priceList[_priceIndex];
     final isFree = _toInt(priceInfo['price']) == 0;
 
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(13),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(13),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  ThemeDetailScreen(theme: theme, imageUrl: widget.imageUrl),
-            ),
-          );
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: _line),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0D0B1730),
-                blurRadius: 16,
-                offset: Offset(0, 8),
-              ),
-            ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                ThemeDetailScreen(theme: theme, imageUrl: widget.imageUrl),
           ),
-          padding: const EdgeInsets.fromLTRB(7, 8, 7, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(6, 8, 6, 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFFDF5),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFF1EBDD)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x120B1730),
-                        blurRadius: 18,
-                        spreadRadius: -5,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: IphoneMockup(
-                    imageUrl: widget.imageUrl,
-                    isCurrent: widget.isOwned,
-                  ),
-                ),
+        );
+      },
+      child: Container(
+        color: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: IphoneMockup(
+                imageUrl: widget.imageUrl,
+                isCurrent: widget.isOwned,
               ),
-              const SizedBox(height: 8),
+            ),
+            const SizedBox(height: 8),
               Text(
                 (theme['name'] ?? 'UNKNOWN THEME').toString().toUpperCase(),
                 textAlign: TextAlign.center,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: _ink,
@@ -1025,16 +992,16 @@ class _ThemeCardItemState extends State<ThemeCardItem> {
                         key: ValueKey(_priceIndex),
                         text: isFree
                             ? 'FREE'
-                            : '${priceInfo['price']} / ${priceInfo['label']}',
-                        bg: _ink,
+                            : '${NumberFormat('#,###').format(_toInt(priceInfo['price']))} / ${priceInfo['label']}',
+                        bg: const Color(0xFF292524),
                         fg: Colors.white,
-                        border: _ink,
+                        border: const Color(0xFF292524),
+                        showCoin: !isFree,
                       ),
               ),
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -1044,6 +1011,7 @@ class _ThemeCardItemState extends State<ThemeCardItem> {
     required Color bg,
     required Color fg,
     required Color border,
+    bool showCoin = false,
   }) {
     return Container(
       key: key,
@@ -1054,16 +1022,25 @@ class _ThemeCardItemState extends State<ThemeCardItem> {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: border),
       ),
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: fg,
-          fontSize: 8.4,
-          fontWeight: FontWeight.w900,
-          height: 1,
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: fg,
+              fontSize: 8.4,
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
+          ),
+          if (showCoin) ...[
+            const SizedBox(width: 4),
+            Image.asset('lib/assets/cion.png', width: 12, height: 12),
+          ],
+        ],
       ),
     );
   }

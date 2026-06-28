@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
-// เปลี่ยนชื่อให้เป็น Public (เอาขีดล่าง _ ออก) เพื่อให้ไฟล์อื่นเรียกใช้ได้
 class AddDiscountModal extends StatefulWidget {
   final Function(Map<String, dynamic>) onSave;
   final List<dynamic> products; 
@@ -19,10 +18,7 @@ class AddDiscountModal extends StatefulWidget {
 
 class _AddDiscountModalState extends State<AddDiscountModal> {
   final _formKey = GlobalKey<FormState>();
-  
-  int _currentTab = 0;
 
-  // Controllers (Tab 1)
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _valueController = TextEditingController();
   String _type = 'percentage';
@@ -30,17 +26,14 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
   bool _applySpecial = true;
   bool _applyJumbo = true;
 
-  // 🎯 State สำหรับเก็บค่า วัน/เวลา
   DateTime? _startDate;
   DateTime? _endDate;
 
-  // State (Tab 2)
   String _applyTo = 'all'; 
   List<String> _selectedProductIds = [];
   String _searchQuery = '';
   int _productTypeTab = 0; 
 
-  // 🗓️ ฟังก์ชันเปิดปฏิทินและนาฬิกา
   Future<void> _pickDateTime(bool isStart) async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -50,7 +43,7 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: Color(0xFF1D4ED8)),
+            colorScheme: const ColorScheme.light(primary: Color(0xFF0F172A)),
           ),
           child: child!,
         );
@@ -65,7 +58,7 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
-              colorScheme: const ColorScheme.light(primary: Color(0xFF1D4ED8)),
+              colorScheme: const ColorScheme.light(primary: Color(0xFF0F172A)),
             ),
             child: child!,
           );
@@ -88,7 +81,6 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
     }
   }
 
-  // 📝 ฟังก์ชันแปลงวันที่ให้อ่านง่าย
   String _formatDateTime(DateTime? dt) {
     if (dt == null) return 'วว/ดด/ปปปป --:--';
     final String day = dt.day.toString().padLeft(2, '0');
@@ -131,7 +123,7 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFFFAF9F6),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
@@ -161,7 +153,7 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
                 const Text(
                   'ละทิ้งการสร้าง?',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
                     color: Color(0xFF0F172A),
                   ),
@@ -171,7 +163,7 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
                   'ข้อมูลที่คุณกรอกไว้จะไม่ถูกบันทึก\nคุณแน่ใจหรือไม่ที่จะละทิ้งการสร้างนี้?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 11,
                     color: Color(0xFF64748B),
                     height: 1.5,
                   ),
@@ -193,7 +185,7 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
                           style: TextStyle(
                             color: Color(0xFF64748B),
                             fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontSize: 13,
                           ),
                         ),
                       ),
@@ -205,7 +197,7 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
                         style: ElevatedButton.styleFrom(
                           elevation: 0,
                           backgroundColor: Colors.red.shade500,
-                          foregroundColor: Colors.white,
+                          foregroundColor: const Color(0xFFFAF9F6),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -215,7 +207,7 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
                           'ละทิ้ง',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontSize: 13,
                           ),
                         ),
                       ),
@@ -244,311 +236,286 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
         if (!didPop) _requestClose();
       },
       child: Container(
-        height: screenHeight * 0.82, // ลดขนาดให้เล็กลงเหมือนหน้า master product
+        height: screenHeight * 0.82,
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: Color(0xFFFAF9F6),
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-      child: Column(
-        children: [
-          // --- HEADER & CLOSE BUTTON ---
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('สร้างโปรโมชัน', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
-                Container(
-                  decoration: const BoxDecoration(color: Color(0xFFF1F5F9), shape: BoxShape.circle),
-                  child: IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 20),
-                    onPressed: _requestClose,
-                    constraints: const BoxConstraints(),
-                    padding: const EdgeInsets.all(8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // --- TAB SWITCHER ---
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              height: 46,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _currentTab = 0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _currentTab == 0 ? Colors.white : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: _currentTab == 0 ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : [],
-                        ),
-                        alignment: Alignment.center,
-                        child: Text('รายละเอียด', style: TextStyle(fontWeight: FontWeight.w900, color: _currentTab == 0 ? const Color(0xFF0F172A) : const Color(0xFF64748B), fontSize: 14)),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _currentTab = 1),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _currentTab == 1 ? Colors.white : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: _currentTab == 1 ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : [],
-                        ),
-                        alignment: Alignment.center,
-                        child: Text('สินค้า', style: TextStyle(fontWeight: FontWeight.w900, color: _currentTab == 1 ? const Color(0xFF0F172A) : const Color(0xFF64748B), fontSize: 14)),
-                      ),
+                  const Text('สร้างโปรโมชัน', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+                  GestureDetector(
+                    onTap: _requestClose,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(color: Color(0xFFEDE9E3), shape: BoxShape.circle),
+                      child: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 16),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 16),
 
-          // --- CONTENT AREA ---
-          Expanded(
-            child: Form(
-              key: _formKey,
-              child: _currentTab == 0 ? _buildDetailsTab() : _buildProductsTab(),
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildDetailsSection(),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      const Divider(height: 1, color: Color(0xFFEDE9E3)),
+                      const SizedBox(height: 16),
+                      
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text('สินค้าที่ร่วมรายการ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      _buildProductsSection(),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
 
-          // --- FIXED BOTTOM BUTTON ---
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF9F6),
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 40,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      final data = {
+                        'name': _nameController.text.trim(),
+                        'type': _type,
+                        'value': double.tryParse(_valueController.text) ?? 0,
+                        'apply_to': _applyTo,
+                        'apply_normal': _applyNormal,
+                        'apply_special': _applySpecial,
+                        'apply_jumbo': _applyJumbo,
+                        'start_date': _startDate?.toIso8601String(), 
+                        'end_date': _endDate?.toIso8601String(),     
+                        'product_ids': _applyTo == 'all' ? [] : _selectedProductIds, 
+                      };
+                      widget.onSave(data);
+                      Navigator.pop(context);
+                    }
+                  },
+                  icon: const Icon(Icons.save_outlined, color: Color(0xFFFAF9F6), size: 14),
+                  label: const Text('บันทึกโปรโมชัน', style: TextStyle(color: Color(0xFFFAF9F6), fontSize: 12, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F172A),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
             ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: _currentTab == 0
-                  ? ElevatedButton(
-                      onPressed: () => setState(() => _currentTab = 1),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0F172A),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('ถัดไป: เลือกสินค้า', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
-                        ],
-                      ),
-                    )
-                  : ElevatedButton.icon(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          final data = {
-                            'name': _nameController.text.trim(),
-                            'type': _type,
-                            'value': double.tryParse(_valueController.text) ?? 0,
-                            'apply_to': _applyTo,
-                            'apply_normal': _applyNormal,
-                            'apply_special': _applySpecial,
-                            'apply_jumbo': _applyJumbo,
-                            'start_date': _startDate?.toIso8601String(), 
-                            'end_date': _endDate?.toIso8601String(),     
-                            'product_ids': _applyTo == 'all' ? [] : _selectedProductIds, 
-                          };
-                          widget.onSave(data);
-                          Navigator.pop(context);
-                        }
-                      },
-                      icon: const Icon(Icons.save_outlined, color: Colors.white),
-                      label: const Text('บันทึกโปรโมชัน', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildDetailsTab() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(left: 20, right: 20, bottom: MediaQuery.of(context).viewInsets.bottom + 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('ชื่อโปรโมชัน', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _nameController,
-            decoration: InputDecoration(
-              hintText: 'เช่น ลดล้างสต็อก, Happy Hour',
-              hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2563EB))),
-            ),
-            validator: (val) => (val == null || val.trim().isEmpty) ? 'กรุณาระบุชื่อโปรโมชัน' : null,
-          ),
-          const SizedBox(height: 20),
-
-          Row(
-            children: [
-              Expanded(
-                flex: 1,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('ประเภท', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: _type,
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'percentage', child: Text('เปอร์เซ็นต์ (%)', style: TextStyle(fontSize: 14))),
-                        DropdownMenuItem(value: 'fixed', child: Text('บาท (฿)', style: TextStyle(fontSize: 14))),
-                      ],
-                      onChanged: (val) => setState(() => _type = val!),
+  Widget _buildDetailsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('ชื่อโปรโมชัน', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  const SizedBox(height: 4),
+                  TextFormField(
+                    controller: _nameController,
+                    style: const TextStyle(fontSize: 11),
+                    decoration: InputDecoration(
+                      hintText: 'เช่น ลดล้างสต็อก',
+                      hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFEDE9E3))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFEDE9E3))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF0F172A))),
                     ),
-                  ],
-                ),
+                    validator: (val) => (val == null || val.trim().isEmpty) ? 'กรุณาระบุ' : null,
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                flex: 1,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('มูลค่า', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _valueController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hintText: '0',
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                      ),
-                      validator: (val) => (val == null || double.tryParse(val) == null) ? 'กรุณากรอกตัวเลข' : null,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('ประเภท', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<String>(
+                    value: _type,
+                    style: const TextStyle(fontSize: 11, color: Colors.black),
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFEDE9E3))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFEDE9E3))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF0F172A))),
                     ),
-                  ],
-                ),
+                    items: const [
+                      DropdownMenuItem(value: 'percentage', child: Text('%', style: TextStyle(fontSize: 11))),
+                      DropdownMenuItem(value: 'fixed', child: Text('฿', style: TextStyle(fontSize: 11))),
+                    ],
+                    onChanged: (val) => setState(() => _type = val!),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('มูลค่า', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  const SizedBox(height: 4),
+                  TextFormField(
+                    controller: _valueController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(fontSize: 11),
+                    decoration: InputDecoration(
+                      hintText: '0',
+                      hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFEDE9E3))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFEDE9E3))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF0F172A))),
+                    ),
+                    validator: (val) => (val == null || double.tryParse(val) == null) ? 'ตัวเลข' : null,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFAF9F6),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFEDE9E3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('ระยะเวลา (ไม่บังคับ)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  if (_startDate != null || _endDate != null)
+                    GestureDetector(
+                      onTap: () => setState(() { _startDate = null; _endDate = null; }),
+                      child: const Text('ล้างค่า', style: TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold)),
+                    )
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('เริ่มต้น', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                        const SizedBox(height: 4),
+                        GestureDetector(
+                          onTap: () => _pickDateTime(true), 
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            decoration: BoxDecoration(color: const Color(0xFFFAF9F6), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFEDE9E3))),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatDateTime(_startDate), 
+                                  style: TextStyle(fontSize: 10, color: _startDate == null ? const Color(0xFF94A3B8) : const Color(0xFF1E293B), fontWeight: _startDate == null ? FontWeight.normal : FontWeight.bold)
+                                ),
+                                const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF94A3B8)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('สิ้นสุด', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                        const SizedBox(height: 4),
+                        GestureDetector(
+                          onTap: () => _pickDateTime(false), 
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            decoration: BoxDecoration(color: const Color(0xFFFAF9F6), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFEDE9E3))),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatDateTime(_endDate), 
+                                  style: TextStyle(fontSize: 10, color: _endDate == null ? const Color(0xFF94A3B8) : const Color(0xFF1E293B), fontWeight: _endDate == null ? FontWeight.normal : FontWeight.bold)
+                                ),
+                                const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF94A3B8)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 24),
+        ),
+        const SizedBox(height: 16),
 
-          // 🎯 กรอบระยะเวลา 
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('ระยะเวลา (ไม่บังคับ)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                    if (_startDate != null || _endDate != null)
-                      GestureDetector(
-                        onTap: () => setState(() { _startDate = null; _endDate = null; }),
-                        child: const Text('ล้างค่า', style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
-                      )
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('เริ่มต้น', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                          const SizedBox(height: 4),
-                          GestureDetector(
-                            onTap: () => _pickDateTime(true), 
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFE2E8F0))),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _formatDateTime(_startDate), 
-                                    style: TextStyle(fontSize: 12, color: _startDate == null ? const Color(0xFF94A3B8) : const Color(0xFF1E293B), fontWeight: _startDate == null ? FontWeight.normal : FontWeight.bold)
-                                  ),
-                                  const Icon(Icons.calendar_today_outlined, size: 14, color: Color(0xFF94A3B8)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('สิ้นสุด', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                          const SizedBox(height: 4),
-                          GestureDetector(
-                            onTap: () => _pickDateTime(false), 
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFE2E8F0))),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _formatDateTime(_endDate), 
-                                    style: TextStyle(fontSize: 12, color: _endDate == null ? const Color(0xFF94A3B8) : const Color(0xFF1E293B), fontWeight: _endDate == null ? FontWeight.normal : FontWeight.bold)
-                                  ),
-                                  const Icon(Icons.calendar_today_outlined, size: 14, color: Color(0xFF94A3B8)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          const Text('เงื่อนไขราคา', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-          const SizedBox(height: 12),
-          _buildCustomCheckbox('ราคาปกติ (Normal)', _applyNormal, (val) => setState(() => _applyNormal = val)),
-          _buildCustomCheckbox('ราคาพิเศษ (Special)', _applySpecial, (val) => setState(() => _applySpecial = val)),
-          _buildCustomCheckbox('ราคาจัมโบ้ (Jumbo)', _applyJumbo, (val) => setState(() => _applyJumbo = val)),
-        ],
-      ),
+        const Text('เงื่อนไขราคา', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(child: _buildCustomCheckbox('ราคาปกติ', _applyNormal, (val) => setState(() => _applyNormal = val))),
+            const SizedBox(width: 4),
+            Expanded(child: _buildCustomCheckbox('ราคาพิเศษ', _applySpecial, (val) => setState(() => _applySpecial = val))),
+            const SizedBox(width: 4),
+            Expanded(child: _buildCustomCheckbox('ราคาจัมโบ้', _applyJumbo, (val) => setState(() => _applyJumbo = val))),
+          ],
+        ),
+      ],
     );
   }
 
@@ -556,45 +523,45 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
     return GestureDetector(
       onTap: () => onChanged(!isChecked),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isChecked ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0), width: isChecked ? 1.5 : 1.0),
+          color: const Color(0xFFFAF9F6),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: isChecked ? const Color(0xFF0F172A) : const Color(0xFFEDE9E3), width: 1.0),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 20,
-              height: 20,
+              width: 14,
+              height: 14,
               decoration: BoxDecoration(
-                color: isChecked ? const Color(0xFF3B82F6) : Colors.white,
+                color: isChecked ? const Color(0xFF0F172A) : const Color(0xFFFAF9F6),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: isChecked ? const Color(0xFF3B82F6) : const Color(0xFFCBD5E1)),
+                border: Border.all(color: isChecked ? const Color(0xFF0F172A) : const Color(0xFFCBD5E1)),
               ),
-              child: isChecked ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
+              child: isChecked ? const Icon(Icons.check, size: 10, color: Color(0xFFFAF9F6)) : null,
             ),
-            const SizedBox(width: 12),
-            Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isChecked ? const Color(0xFF1E293B) : const Color(0xFF475569))),
+            const SizedBox(width: 4),
+            Expanded(child: Text(title, overflow: TextOverflow.ellipsis, maxLines: 1, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isChecked ? const Color(0xFF1E293B) : const Color(0xFF475569)))),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProductsTab() {
+  Widget _buildProductsSection() {
     final currentListToDisplay = _productTypeTab == 0 ? widget.products : widget.productMaster;
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             children: [
               Container(
-                height: 40,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFE2E8F0))),
+                height: 32,
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFEDE9E3))),
                 child: Row(
                   children: [
                     Expanded(
@@ -602,33 +569,33 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
                         onTap: () => setState(() => _applyTo = 'all'),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: _applyTo == 'all' ? const Color(0xFFF8FAFC) : Colors.transparent,
+                            color: _applyTo == 'all' ? const Color(0xFFFAF9F6) : Colors.transparent,
                             borderRadius: const BorderRadius.horizontal(left: Radius.circular(7)),
                           ),
                           alignment: Alignment.center,
-                          child: Text('ทั้งร้าน', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: _applyTo == 'all' ? const Color(0xFF0F172A) : const Color(0xFF64748B))),
+                          child: Text('ทั้งร้าน', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: _applyTo == 'all' ? const Color(0xFF0F172A) : const Color(0xFF64748B))),
                         ),
                       ),
                     ),
-                    Container(width: 1, color: const Color(0xFFE2E8F0)),
+                    Container(width: 1, color: const Color(0xFFEDE9E3)),
                     Expanded(
                       child: GestureDetector(
                         onTap: () => setState(() => _applyTo = 'specific'),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: _applyTo == 'specific' ? Colors.white : const Color(0xFFF8FAFC),
+                            color: _applyTo == 'specific' ? const Color(0xFFFAF9F6) : const Color(0xFFFAF9F6),
                             borderRadius: const BorderRadius.horizontal(right: Radius.circular(7)),
                             border: _applyTo == 'specific' ? Border.all(color: const Color(0xFF0F172A), width: 1.5) : null,
                           ),
                           alignment: Alignment.center,
-                          child: Text('เลือกเฉพาะบางเมนู', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: _applyTo == 'specific' ? const Color(0xFF0F172A) : const Color(0xFF64748B))),
+                          child: Text('เลือกเฉพาะบางเมนู', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: _applyTo == 'specific' ? const Color(0xFF0F172A) : const Color(0xFF64748B))),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               if (_applyTo == 'specific') ...[
                 Row(
@@ -637,12 +604,12 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
                       child: InkWell(
                         onTap: () => setState(() => _productTypeTab = 0),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(
-                            border: Border(bottom: BorderSide(color: _productTypeTab == 0 ? const Color(0xFF3B82F6) : Colors.transparent, width: 3)),
+                            border: Border(bottom: BorderSide(color: _productTypeTab == 0 ? const Color(0xFF0F172A) : Colors.transparent, width: 2)),
                           ),
                           alignment: Alignment.center,
-                          child: Text('อาหารหน้าร้าน', style: TextStyle(fontWeight: FontWeight.bold, color: _productTypeTab == 0 ? const Color(0xFF3B82F6) : const Color(0xFF94A3B8))),
+                          child: Text('อาหารหน้าร้าน', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _productTypeTab == 0 ? const Color(0xFF0F172A) : const Color(0xFF94A3B8))),
                         ),
                       ),
                     ),
@@ -650,153 +617,157 @@ class _AddDiscountModalState extends State<AddDiscountModal> {
                       child: InkWell(
                         onTap: () => setState(() => _productTypeTab = 1),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(
-                            border: Border(bottom: BorderSide(color: _productTypeTab == 1 ? const Color(0xFF3B82F6) : Colors.transparent, width: 3)),
+                            border: Border(bottom: BorderSide(color: _productTypeTab == 1 ? const Color(0xFF0F172A) : Colors.transparent, width: 2)),
                           ),
                           alignment: Alignment.center,
-                          child: Text('สินค้าบาร์โค้ด', style: TextStyle(fontWeight: FontWeight.bold, color: _productTypeTab == 1 ? const Color(0xFF3B82F6) : const Color(0xFF94A3B8))),
+                          child: Text('สินค้าบาร์โค้ด', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _productTypeTab == 1 ? const Color(0xFF0F172A) : const Color(0xFF94A3B8))),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                const SizedBox(height: 16),
+                const Divider(height: 1, color: Color(0xFFEDE9E3)),
+                const SizedBox(height: 12),
 
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(color: const Color(0xFFFAF9F6), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFEDE9E3))),
                   child: Row(
                     children: [
-                      const Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
+                      const Icon(Icons.search, color: Color(0xFF94A3B8), size: 16),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
+                          style: const TextStyle(fontSize: 11),
                           onChanged: (val) => setState(() => _searchQuery = val),
                           decoration: const InputDecoration(
                             hintText: 'ค้นหาชื่อสินค้า หรือ SKU...',
-                            hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                            hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
                             border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(vertical: 10),
+                            isDense: true,
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
               ],
             ],
           ),
         ),
 
         if (_applyTo == 'specific')
-          Expanded(
-            child: currentListToDisplay.isEmpty
-                ? const Center(child: Text('ไม่พบรายการสินค้าในหมวดหมู่นี้', style: TextStyle(color: Color(0xFF94A3B8))))
-                : ListView.builder(
-                    padding: EdgeInsets.only(left: 20, right: 20, top: 8, bottom: MediaQuery.of(context).viewInsets.bottom + 20),
-                    itemCount: currentListToDisplay.length,
-                    itemBuilder: (context, index) {
-                      final p = currentListToDisplay[index];
-                      final String pId = p['id']?.toString() ?? '';
-                      final String pName = p['name']?.toString() ?? 'ไม่มีชื่อ';
-                      final String sku = p['sku']?.toString() ?? ''; 
-                      final isSelected = _selectedProductIds.contains(pId);
-                      
-                      if (_searchQuery.isNotEmpty) {
-                        final q = _searchQuery.toLowerCase();
-                        if (!pName.toLowerCase().contains(q) && !sku.toLowerCase().contains(q)) {
-                          return const SizedBox.shrink();
-                        }
+          currentListToDisplay.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: Text('ไม่พบรายการสินค้าในหมวดหมู่นี้', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)))),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(left: 16, right: 16, top: 4),
+                  itemCount: currentListToDisplay.length,
+                  itemBuilder: (context, index) {
+                    final p = currentListToDisplay[index];
+                    final String pId = p['id']?.toString() ?? '';
+                    final String pName = p['name']?.toString() ?? 'ไม่มีชื่อ';
+                    final String sku = p['sku']?.toString() ?? ''; 
+                    final isSelected = _selectedProductIds.contains(pId);
+                    
+                    if (_searchQuery.isNotEmpty) {
+                      final q = _searchQuery.toLowerCase();
+                      if (!pName.toLowerCase().contains(q) && !sku.toLowerCase().contains(q)) {
+                        return const SizedBox.shrink();
                       }
+                    }
 
-                      final String price = p['price']?.toString() ?? '0';
-                      final String? priceSpecial = p['price_special']?.toString();
-                      final String? priceJumbo = p['price_jumbo']?.toString();
+                    final String price = p['price']?.toString() ?? '0';
+                    final String? priceSpecial = p['price_special']?.toString();
+                    final String? priceJumbo = p['price_jumbo']?.toString();
 
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            if (isSelected) {
-                              _selectedProductIds.remove(pId);
-                            } else {
-                              _selectedProductIds.add(pId);
-                            }
-                          });
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFF1F5F9), width: 1.5),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  color: isSelected ? const Color(0xFF3B82F6) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFCBD5E1)),
-                                ),
-                                child: isSelected ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(pName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
-                                    if (sku.isNotEmpty) ...[
-                                      const SizedBox(height: 2),
-                                      Text('SKU: $sku', style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
-                                    ],
-                                    const SizedBox(height: 6),
-                                    Wrap(
-                                      spacing: 6,
-                                      runSpacing: 4,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(4)),
-                                          child: Text('฿$price', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF64748B))),
-                                        ),
-                                        if (priceSpecial != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(4)),
-                                            child: Text('S: ฿$priceSpecial', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF4F46E5))),
-                                          ),
-                                        if (priceJumbo != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(4)),
-                                            child: Text('J: ฿$priceJumbo', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF7C3AED))),
-                                          ),
-                                      ],
-                                    )
-                                  ],
-                                ),
-                              )
-                            ],
-                          ),
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedProductIds.remove(pId);
+                          } else {
+                            _selectedProductIds.add(pId);
+                          }
+                        });
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFAF9F6),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFEDE9E3), width: 1.0),
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
                         ),
-                      );
-                    },
-                  ),
-          )
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xFF0F172A) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFCBD5E1)),
+                              ),
+                              child: isSelected ? const Icon(Icons.check, size: 10, color: Color(0xFFFAF9F6)) : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(pName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF1E293B))),
+                                  if (sku.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text('SKU: $sku', style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                                  ],
+                                  const SizedBox(height: 4),
+                                  Wrap(
+                                    spacing: 4,
+                                    runSpacing: 4,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(color: const Color(0xFFEDE9E3), borderRadius: BorderRadius.circular(4)),
+                                        child: Text('฿$price', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFF64748B))),
+                                      ),
+                                      if (priceSpecial != null)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                          decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(4)),
+                                          child: Text('S: ฿$priceSpecial', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFF4F46E5))),
+                                        ),
+                                      if (priceJumbo != null)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                          decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(4)),
+                                          child: Text('J: ฿$priceJumbo', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFF7C3AED))),
+                                        ),
+                                    ],
+                                  )
+                                ],
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                )
         else
-          const Expanded(
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 24),
             child: Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 40),
-                child: Text('โปรโมชันนี้จะถูกนำไปใช้งานกับสินค้าทุกรายการในร้านโดยอัตโนมัติ', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF64748B), height: 1.5)),
-              ),
+              child: Text('โปรโมชันนี้จะถูกนำไปใช้งานกับสินค้าทุกรายการในร้านโดยอัตโนมัติ', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.5)),
             ),
           )
       ],

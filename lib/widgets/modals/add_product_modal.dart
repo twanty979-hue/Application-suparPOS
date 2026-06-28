@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -548,12 +548,12 @@ class _AddProductModalState extends State<AddProductModal> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDBEAFE),
+                        color: const Color(0xFFFAF9F6),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(
                         Icons.save_outlined,
-                        color: Color(0xFF2563EB),
+                        color: Color(0xFF16A34A),
                         size: 22,
                       ),
                     ),
@@ -587,9 +587,9 @@ class _AddProductModalState extends State<AddProductModal> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: const Color(0xFFFAF9F6),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: const Color(0xFFEDE9E3)),
                   ),
                   child: const Text(
                     'มีข้อมูลที่ยังไม่ได้บันทึก เลือกอัปเดตสินค้า หรือออกโดยไม่เก็บการเปลี่ยนแปลง',
@@ -634,7 +634,7 @@ class _AddProductModalState extends State<AddProductModal> {
                         child: FilledButton.icon(
                           onPressed: () => Navigator.pop(dialogContext, 'save'),
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF2563EB),
+                            backgroundColor: const Color(0xFF16A34A),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -724,7 +724,7 @@ class _AddProductModalState extends State<AddProductModal> {
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: const BoxDecoration(
-                            color: Color(0xFFF1F5F9),
+                            color: Color(0xFFFAF9F6),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -830,8 +830,8 @@ class _AddProductModalState extends State<AddProductModal> {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          disabledBackgroundColor: const Color(0xFF93C5FD),
+                          backgroundColor: const Color(0xFF16A34A),
+                          disabledBackgroundColor: const Color(0xFF86EFAC),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -858,7 +858,7 @@ class _AddProductModalState extends State<AddProductModal> {
             final imageSize = constraints.maxWidth < 340 ? 96.0 : 112.0;
             final fieldBorder = OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: const BorderSide(color: Color(0xFFEDE9E3)),
             );
 
             return Row(
@@ -873,9 +873,9 @@ class _AddProductModalState extends State<AddProductModal> {
                       children: [
                         Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: const Color(0xFFFAF9F6),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: const Color(0xFFEDE9E3)),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(15),
@@ -928,7 +928,7 @@ class _AddProductModalState extends State<AddProductModal> {
                           enabledBorder: fieldBorder,
                           focusedBorder: fieldBorder.copyWith(
                             borderSide: const BorderSide(
-                              color: Color(0xFF2563EB),
+                              color: Color(0xFF16A34A),
                             ),
                           ),
                         ),
@@ -1019,9 +1019,9 @@ class _AddProductModalState extends State<AddProductModal> {
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: const Color(0xFFFAF9F6),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: const Color(0xFFEDE9E3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1031,7 +1031,7 @@ class _AddProductModalState extends State<AddProductModal> {
                         Icon(
                           Icons.payments_outlined,
                           size: 12,
-                          color: Color(0xFF2563EB),
+                          color: Color(0xFF16A34A),
                         ),
                         SizedBox(width: 5),
                         Text(
@@ -1173,12 +1173,12 @@ class _AddProductModalState extends State<AddProductModal> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: const Color(0xFFFAF9F6),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _isRecommended
                               ? const Color(0xFFF59E0B)
-                              : const Color(0xFFE2E8F0),
+                              : const Color(0xFFEDE9E3),
                         ),
                       ),
                       child: Row(
@@ -1228,7 +1228,7 @@ class _AddProductModalState extends State<AddProductModal> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: const Color(0xFFFAF9F6),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _isAvailable
@@ -1290,9 +1290,9 @@ class _AddProductModalState extends State<AddProductModal> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
+            color: const Color(0xFFFAF9F6),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: const Color(0xFFEDE9E3)),
           ),
           child: Row(
             children: [
@@ -1365,7 +1365,7 @@ class _AddProductModalState extends State<AddProductModal> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: const Color(0xFFEDE9E3)),
             ),
             child: const Column(
               children: [
@@ -1403,7 +1403,7 @@ class _AddProductModalState extends State<AddProductModal> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: const Color(0xFFEDE9E3)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.01),
@@ -1662,3 +1662,4 @@ class _AddProductModalState extends State<AddProductModal> {
     );
   }
 }
+

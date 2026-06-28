@@ -43,7 +43,7 @@ class _ProductsMainScreenState extends State<ProductsMainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: const Color(0xFFEDE9E3), // สีขาวไข่แบบเข้ม
       // 🍔 ใส่ Drawer ไว้ที่หน้าพ่อตัวเดียว คุมเปิดปิดได้ทุกหน้าจอย่อย
       drawer: const AppSidebar(activeMenu: 'menu_management'),
       body: SafeArea(

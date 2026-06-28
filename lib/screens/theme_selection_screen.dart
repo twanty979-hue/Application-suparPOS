@@ -19,13 +19,13 @@ class ThemeSelectionScreen extends StatefulWidget {
 class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  static const Color _ink = Color(0xFF0B1730);
-  static const Color _mutedInk = Color(0xFF8EA0B7);
-  static const Color _pageBg = Color(0xFFF5F8FB);
-  static const Color _softPanel = Color(0xFFE9EEF4);
-  static const Color _line = Color(0xFFD9E2EC);
-  static const Color _mint = Color(0xFFE9FFF6);
-  static const Color _mintInk = Color(0xFF08A66A);
+  static const Color _ink = Color(0xFF292524);
+  static const Color _mutedInk = Color(0xFF64748B);
+  static const Color _pageBg = Color(0xFFEDE9E3);
+  static const Color _softPanel = Color(0xFFFAF9F6);
+  static const Color _line = Color(0xFFDCD6CB);
+  static const Color _mint = Color(0xFFD1FAE5);
+  static const Color _mintInk = Color(0xFF065F46);
 
   bool _isLoading = true;
   String _activeTab = 'active';
@@ -179,7 +179,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
+            _buildHeader(context),
             _buildTabToggle(),
             _buildCategoryFilter(),
             Expanded(
@@ -209,63 +209,114 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
     return daysLeft != null && daysLeft <= 0;
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        12,
-        10,
-        16,
-        0,
-      ), // ปรับ padding ซ้ายนิดนึงให้ปุ่มชิดขอบพอดี
-      child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.center, // จัดให้อยู่กึ่งกลางแนวตั้งพร้อมๆ กัน
-        children: [
-          // 1. ฝั่งซ้ายสุด: ปุ่ม Hamburger Menu สำหรับเปิด Sidebar
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: () => _scaffoldKey.currentState?.openDrawer(),
-              child: const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Icon(Icons.menu_rounded, color: _ink, size: 26),
-              ),
-            ),
-          ),
-          const SizedBox(
-            width: 4,
-          ), // เว้นระยะห่างระหว่างปุ่มกับตัวหนังสือนิดนึง
-          // 2. ขยับมาทางขวา: ข้อความ MY THEMES
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'MY THEMES',
-                  style: TextStyle(
-                    color: _ink,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    fontStyle: FontStyle.italic,
-                    height: 1,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'MANAGED COLLECTION',
-                  style: TextStyle(
-                    color: _mutedInk,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.9,
-                    height: 1,
-                  ),
-                ),
-              ],
-            ),
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: Color(0xFFEDE9E3),
+        border: Border(bottom: BorderSide(color: Color(0xFFDCD6CB))),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x0A0B1730),
+            blurRadius: 14,
+            offset: Offset(0, 4),
           ),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Row(
+          children: [
+            Material(
+              color: const Color(0xFF292524),
+              borderRadius: BorderRadius.circular(13),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(13),
+                onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(13),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x1A0B1730),
+                        blurRadius: 14,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.palette_outlined,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 11),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'MY THEMES',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Color(0xFF292524),
+                      fontSize: 21,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      height: 0.95,
+                    ),
+                  ),
+                  SizedBox(height: 7),
+                  Text(
+                    'เลือกธีมที่ชอบและปรับแต่งสีสันของแอป',
+                    style: TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Material(
+              color: const Color(0xFF292524),
+              borderRadius: BorderRadius.circular(13),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.filter_list_rounded, color: Colors.white, size: 20),
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  color: Colors.white,
+                  onSelected: (value) {
+                    setState(() => _selectedCategory = value);
+                  },
+                  itemBuilder: (context) {
+                    return _categories.map<PopupMenuEntry<String>>((cat) {
+                      final id = _categoryId(cat);
+                      return PopupMenuItem<String>(
+                        value: id,
+                        child: _buildCategoryLabel(cat),
+                      );
+                    }).toList();
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -308,7 +359,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
             // สั่งให้ Alignment อยู่ตรงกลาง เพื่อให้เนื้อหา (Row) อยู่กลางปุ่มที่ขยายเต็ม
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: isActive ? Colors.white : Colors.transparent,
+              color: isActive ? const Color(0xFF292524) : Colors.transparent,
               borderRadius: BorderRadius.circular(16), // ล้อไปกับขอบนอก
               boxShadow: isActive
                   ? [
@@ -332,14 +383,14 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   child: Icon(
                     icon,
                     size: 14,
-                    color: isActive ? _ink : const Color(0xFF6E7F93),
+                    color: isActive ? Colors.white : const Color(0xFF6E7F93),
                   ),
                 ),
                 const SizedBox(width: 8),
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 220),
                   style: TextStyle(
-                    color: isActive ? _ink : const Color(0xFF6E7F93),
+                    color: isActive ? Colors.white : const Color(0xFF6E7F93),
                     fontSize: 11,
                     fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
                     letterSpacing: 0.5,
@@ -356,58 +407,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
   }
 
   Widget _buildCategoryFilter() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 31, 16, 18),
-      child: Container(
-        height: 25,
-        padding: const EdgeInsets.only(left: 10, right: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: _line),
-          borderRadius: BorderRadius.circular(9),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.025),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: _selectedCategory,
-            isDense: true,
-            icon: const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: Color(0xFF6E7F93),
-              size: 14,
-            ),
-            style: const TextStyle(
-              color: _ink,
-              fontSize: 8.5,
-              fontWeight: FontWeight.w900,
-            ),
-            selectedItemBuilder: (context) {
-              return _categories.map<Widget>((cat) {
-                return _buildCategoryLabel(cat);
-              }).toList();
-            },
-            items: _categories.map<DropdownMenuItem<String>>((cat) {
-              final id = _categoryId(cat);
-              return DropdownMenuItem<String>(
-                value: id,
-                child: _buildCategoryLabel(cat),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() => _selectedCategory = value);
-              }
-            },
-          ),
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildCategoryLabel(dynamic cat) {
@@ -493,17 +493,69 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
     final isApplying = _applyingThemeId == themeId;
     final isExpired = _isThemeExpired(theme);
     final imageUrl = _getImageUrl(mkt['image_url']?.toString());
+    final themeName = (mkt['name'] ?? 'UNKNOWN THEME').toString().toUpperCase();
 
     final card = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AspectRatio(
-          aspectRatio: 0.48, // ปรับให้เพรียวขึ้นสไตล์ iPhone
-          child: IphoneMockup(imageUrl: imageUrl, isCurrent: isCurrent),
+          aspectRatio: 0.48, // สัดส่วนใกล้เคียง iPhone
+          child: GestureDetector(
+            onTap: () {
+              if (isExpired || isCurrent || themeId.isEmpty || slug.isEmpty || themeMode.isEmpty) return;
+              
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    backgroundColor: const Color(0xFFFAF9F6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    title: const Text(
+                      'ยืนยันการเปลี่ยนธีม',
+                      style: TextStyle(
+                        color: Color(0xFF292524),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    content: Text(
+                      'คุณต้องการเลือกธีม \ ใช่หรือไม่?',
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 14,
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'ยกเลิก',
+                          style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _applyTheme(themeId, slug, themeMode);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF292524),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('ยืนยัน', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+            child: IphoneMockup(imageUrl: imageUrl, isCurrent: isCurrent),
+          ),
         ),
         const SizedBox(height: 7),
         Text(
-          (mkt['name'] ?? 'UNKNOWN THEME').toString().toUpperCase(),
+          themeName,
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -517,20 +569,14 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
         const SizedBox(height: 4),
         Center(child: _buildDurationPill(theme, isLifetime)),
         const SizedBox(height: 9),
+        // Remove apply button entirely and just show status if expired or current
         SizedBox(
           height: 22,
           child: isExpired
               ? _buildExpiredButton()
               : isCurrent
               ? _buildCurrentButton()
-              : _buildApplyButton(
-                  isApplying: isApplying,
-                  enabled:
-                      themeId.isNotEmpty &&
-                      slug.isNotEmpty &&
-                      themeMode.isNotEmpty,
-                  onPressed: () => _applyTheme(themeId, slug, themeMode),
-                ),
+              : const SizedBox(),
         ),
       ],
     );
@@ -541,7 +587,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
       fit: StackFit.expand,
       children: [
         Opacity(opacity: 0.42, child: card),
-        const Positioned.fill(child: _ExpiredThemeOverlay()),
+        // Removed _ExpiredThemeOverlay() so no red cross is drawn!
       ],
     );
   }
@@ -603,14 +649,14 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
               width: 11,
               height: 11,
               child: CircularProgressIndicator(
-                color: Colors.white,
+                color: const Color(0xFFFAF9F6),
                 strokeWidth: 2,
               ),
             )
           : const Text(
               'APPLY',
               style: TextStyle(
-                color: Colors.white,
+                color: const Color(0xFFFAF9F6),
                 fontSize: 7.5,
                 fontWeight: FontWeight.w900,
                 height: 1,
@@ -683,12 +729,12 @@ class _ExpiredThemeOverlay extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF0B1730).withValues(alpha: 0.86),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.white, width: 1),
+                border: Border.all(color: const Color(0xFFFAF9F6), width: 1),
               ),
               child: const Text(
                 'EXPIRED',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: const Color(0xFFFAF9F6),
                   fontSize: 9,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.8,

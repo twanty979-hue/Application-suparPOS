@@ -838,8 +838,9 @@ extension PosCartExtension on _PosScreenState {
   }
 
   double get _rawTotal {
-    if (_activeTab == 'tables' && _selectedOrder != null) {
-      return _orderTotal(_selectedOrder!);
+    if (_activeTab == 'tables') {
+      if (_selectedOrder != null) return _orderTotal(_selectedOrder!);
+      return 0.0; // ยังไม่เลือกโต๊ะ → ไม่นำตะกร้า POS มาแสดง
     }
     return _cart.fold(
       0.0,
@@ -851,7 +852,8 @@ extension PosCartExtension on _PosScreenState {
       _paymentMethod == 'cash' ? ((_rawTotal * 4).ceil() / 4) : _rawTotal;
 
   int get _totalItems {
-    if (_activeTab == 'tables' && _selectedOrder != null) {
+    if (_activeTab == 'tables') {
+      if (_selectedOrder == null) return 0; // ยังไม่เลือกโต๊ะ → ไม่นำตะกร้า POS มาแสดง
       final items = _selectedOrder!['order_items'] as List? ?? const [];
       return items.where((item) {
         if (item is! Map) return false;

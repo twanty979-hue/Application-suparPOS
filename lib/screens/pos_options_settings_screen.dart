@@ -29,6 +29,7 @@ class PosOptionsSettingsScreen extends StatefulWidget {
 
 class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
   bool _showProductImages = true;
+  bool _showProductNames = true;
   bool _showBarcodeProducts = true;
   bool _autoPrintIncomingOrders = false;
   bool _showReceiptLogo = false;
@@ -37,7 +38,6 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
   String? _notificationSoundPath;
   int _receiptCopies = 1;
   String _tableQrMode = 'rotating';
-  bool _enableShiftMode = false;
 
   @override
   void initState() {
@@ -51,6 +51,8 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
     setState(() {
       _showProductImages =
           prefs.getBool('pos_show_product_images_${widget.brandId}') ?? true;
+      _showProductNames =
+          prefs.getBool('pos_show_product_names_${widget.brandId}') ?? true;
       _showBarcodeProducts =
           prefs.getBool('pos_show_barcode_products_${widget.brandId}') ?? true;
       _autoPrintIncomingOrders =
@@ -67,8 +69,6 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
       _receiptCopies = 1;
       _tableQrMode =
           prefs.getString('table_qr_mode_${widget.brandId}') ?? 'rotating';
-      _enableShiftMode =
-          prefs.getBool('pos_enable_shift_mode_${widget.brandId}') ?? false;
     });
 
     final dbSettings = await DatabaseHelper.instance.getPrinterSettings(
@@ -83,11 +83,6 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
     await _fetchTableQrMode();
   }
 
-  Future<void> _setEnableShiftMode(bool value) async {
-    setState(() => _enableShiftMode = value);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('pos_enable_shift_mode_${widget.brandId}', value);
-  }
 
   Future<void> _fetchTableQrMode() async {
     try {
@@ -114,9 +109,34 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
   }
 
   Future<void> _setShowProductImages(bool value) async {
-    setState(() => _showProductImages = value);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('pos_show_product_images_${widget.brandId}', value);
+    
+    // หากปิดรูปภาพ ต้องบังคับเปิดชื่อสินค้าเสมอ
+    bool newShowNames = _showProductNames;
+    if (!value) {
+      newShowNames = true;
+      await prefs.setBool('pos_show_product_names_${widget.brandId}', true);
+    }
+    
+    if (!mounted) return;
+    setState(() {
+      _showProductImages = value;
+      _showProductNames = newShowNames;
+    });
+  }
+
+  Future<void> _setShowProductNames(bool value) async {
+    // ปิดชื่อสินค้าได้ ก็ต่อเมื่อเปิดรูปภาพอยู่เท่านั้น
+    if (!value && !_showProductImages) {
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('pos_show_product_names_${widget.brandId}', value);
+    if (!mounted) return;
+    setState(() {
+      _showProductNames = value;
+    });
   }
 
   Future<void> _setShowBarcodeProducts(bool value) async {
@@ -250,7 +270,7 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FC),
+      backgroundColor: const Color(0xFFEDE9E3),
       drawer: const AppSidebar(activeMenu: 'settings'),
       body: SafeArea(
         child: Builder(
@@ -275,7 +295,17 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
                               value: _showProductImages,
                               onChanged: _setShowProductImages,
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 10),
+                            _buildOptionCard(
+                              icon: Icons.text_fields_rounded,
+                              iconColor: const Color(0xFF15803D),
+                              iconBg: const Color(0xFFE8F8EC),
+                              title: 'แสดงชื่อสินค้า',
+                              subtitle: 'เปิด/ปิดชื่อสินค้า (ปิดได้เมื่อแสดงรูปเท่านั้น)',
+                              value: _showProductNames,
+                              onChanged: _setShowProductNames,
+                            ),
+                            const SizedBox(height: 10),
                             _buildOptionCard(
                               icon: Icons.qr_code_2_rounded,
                               iconColor: const Color(0xFF7C3AED),
@@ -286,7 +316,7 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
                               value: _showBarcodeProducts,
                               onChanged: _setShowBarcodeProducts,
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 10),
                             _buildOptionCard(
                               icon: Icons.room_service_outlined,
                               iconColor: AppColors.emerald500,
@@ -296,22 +326,12 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
                               value: _autoPrintIncomingOrders,
                               onChanged: _setAutoPrintIncomingOrders,
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 10),
                             _buildTableQrModeCard(),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 10),
                             _buildReceiptCopiesCard(),
-                            const SizedBox(height: 14),
-                            _buildOptionCard(
-                              icon: Icons.account_balance_wallet_outlined,
-                              iconColor: Colors.deepOrange,
-                              iconBg: const Color(0xFFFFF3E0),
-                              title: 'โหมดเปิด-ปิดกะ (Shift Control)',
-                              subtitle:
-                                  'เปิดเพื่อบันทึกกะทำงานของพนักงาน ตรวจสอบเงินทอนเริ่มต้น และกระทบยอดปิดเครื่องเงินสด',
-                              value: _enableShiftMode,
-                              onChanged: _setEnableShiftMode,
-                            ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 10),
+
                             _buildOptionCard(
                               icon: Icons.storefront_rounded,
                               iconColor: const Color(0xFF0891B2),
@@ -322,7 +342,7 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
                               value: _showReceiptLogo,
                               onChanged: _setShowReceiptLogo,
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 10),
                             _buildNotificationSettingsCard(),
                           ],
                         ),
@@ -339,11 +359,16 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 430;
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 12 : 16,
+        8,
+        compact ? 12 : 16,
+        8,
+      ),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE9EEF6))),
+        color: Color(0xFFEDE9E3), // ขาวไข่เข้ม
       ),
       child: Row(
         children: [
@@ -357,20 +382,20 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
             },
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              width: 42,
-              height: 42,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: AppColors.slate900,
+                color: const Color(0xFFDCD6CB), // ปุ่มสีเข้มขึ้น
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
-                Icons.point_of_sale_outlined,
-                color: Colors.white,
-                size: 22,
+                Icons.point_of_sale_outlined, // ไอคอนเดิม ไม่ใช่แฮมเบอร์เกอร์!
+                color: Color(0xFF292524),
+                size: 20,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: compact ? 12 : 16),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,8 +403,8 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
                 Text(
                   'ตั้งค่าหน้าคิดเงิน',
                   style: TextStyle(
-                    color: AppColors.slate900,
-                    fontSize: 19,
+                    color: Color(0xFF292524),
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -387,7 +412,7 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
                 Text(
                   'ตั้งค่าการแสดงผลและงานอัตโนมัติของ POS',
                   style: TextStyle(
-                    color: AppColors.slate400,
+                    color: Color(0xFF64748B),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -411,29 +436,22 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEAF0F7)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF64748B).withOpacity(0.08),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: const Color(0xFFFAF9F6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCD6CB)),
       ),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(13),
+              color: const Color(0xFFDCD6CB),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: iconColor, size: 22),
+            child: Icon(icon, color: const Color(0xFF292524), size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -443,18 +461,18 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: AppColors.slate900,
-                    fontSize: 15,
+                    color: Color(0xFF292524),
+                    fontSize: 13,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: AppColors.slate400,
+                    color: Color(0xFF64748B),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -464,7 +482,7 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
           ),
           Switch.adaptive(
             value: value,
-            activeColor: iconColor,
+            activeColor: const Color(0xFF292524),
             onChanged: onChanged,
           ),
         ],
@@ -479,18 +497,11 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEAF0F7)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF64748B).withOpacity(0.08),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: const Color(0xFFFAF9F6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCD6CB)),
       ),
       child: Column(
         children: [
@@ -509,7 +520,7 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
             value: _notificationSoundEnabled,
             onChanged: _setNotificationSoundEnabled,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -549,18 +560,11 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
   Widget _buildTableQrModeCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEAF0F7)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF64748B).withOpacity(0.08),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        color: const Color(0xFFFAF9F6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCD6CB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -568,16 +572,16 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
           Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.blue50,
-                  borderRadius: BorderRadius.circular(13),
+                  color: const Color(0xFFDCD6CB),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.qr_code_2_rounded,
-                  color: AppColors.blue600,
-                  size: 22,
+                  color: Color(0xFF292524),
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 12),
@@ -588,16 +592,16 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
                     Text(
                       'โหมด QR โต๊ะ',
                       style: TextStyle(
-                        color: AppColors.slate900,
-                        fontSize: 15,
+                        color: Color(0xFF292524),
+                        fontSize: 13,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    SizedBox(height: 3),
+                    SizedBox(height: 2),
                     Text(
                       'เลือก QR ติดโต๊ะ หรือ QR เปลี่ยนเมื่อคิดเงิน',
                       style: TextStyle(
-                        color: AppColors.slate400,
+                        color: Color(0xFF64748B),
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -607,7 +611,7 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(child: _buildQrModeButton('rotating', 'เปลี่ยนทุกรอบ')),
@@ -623,22 +627,22 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
   Widget _buildQrModeButton(String mode, String label) {
     final isActive = _tableQrMode == mode;
     return SizedBox(
-      height: 42,
+      height: 36,
       child: OutlinedButton(
         onPressed: () => _setTableQrMode(mode),
         style: OutlinedButton.styleFrom(
-          backgroundColor: isActive ? AppColors.slate900 : Colors.white,
-          foregroundColor: isActive ? Colors.white : AppColors.slate700,
+          backgroundColor: isActive ? const Color(0xFF292524) : Colors.transparent,
+          foregroundColor: isActive ? Colors.white : const Color(0xFF292524),
           side: BorderSide(
-            color: isActive ? AppColors.slate900 : AppColors.slate200,
+            color: isActive ? const Color(0xFF292524) : const Color(0xFFDCD6CB),
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
         ),
       ),
     );
@@ -745,13 +749,13 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
     return Row(
       children: [
         Container(
-          width: 42,
-          height: 42,
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
-            color: AppColors.orange50,
-            borderRadius: BorderRadius.circular(13),
+            color: const Color(0xFFDCD6CB),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: AppColors.orange600, size: 22),
+          child: Icon(icon, color: const Color(0xFF292524), size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -761,18 +765,18 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
               Text(
                 title,
                 style: const TextStyle(
-                  color: AppColors.slate900,
-                  fontSize: 15,
+                  color: Color(0xFF292524),
+                  fontSize: 13,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 subtitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: AppColors.slate400,
+                  color: Color(0xFF64748B),
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -782,7 +786,7 @@ class _PosOptionsSettingsScreenState extends State<PosOptionsSettingsScreen> {
         ),
         Switch.adaptive(
           value: value,
-          activeColor: AppColors.orange600,
+          activeColor: const Color(0xFF292524),
           onChanged: onChanged,
         ),
       ],

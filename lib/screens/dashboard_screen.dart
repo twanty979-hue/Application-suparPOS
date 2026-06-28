@@ -1,4 +1,4 @@
-// lib/screens/dashboard_screen.dart
+﻿// lib/screens/dashboard_screen.dart
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui'
@@ -477,7 +477,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(
-            primary: Color(0xFF4F46E5), // เปลี่ยนสีหลักให้เข้ากับตีม
+            primary: Color(0xFF1E293B), // เปลี่ยนสีหลักให้เข้ากับตีม
             onPrimary: Colors.white,
             onSurface: Color(0xFF0F172A),
           ),
@@ -520,7 +520,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: const Color(0xFFEDE9E3),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -529,7 +529,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_month_rounded, color: Color(0xFF4F46E5), size: 22),
+                    Icon(Icons.calendar_month_rounded, color: Color(0xFF1E293B), size: 22),
                     SizedBox(width: 10),
                     Text(
                       'เลือกช่วงเวลา',
@@ -552,10 +552,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _buildDateOption('เมื่อวาน', 'yesterday', Icons.turn_left_rounded),
                       _buildDateOption('7 วันล่าสุด', 'last7days', Icons.view_week_rounded),
                       _buildDateOption('30 วันล่าสุด', 'last30days', Icons.date_range_rounded),
-                      const Divider(color: Color(0xFFF1F5F9), height: 24, thickness: 1.5),
+                      const Divider(color: Color(0xFFFAF9F6), height: 24, thickness: 1.5),
                       _buildDateOption('เดือนนี้', 'thisMonth', Icons.calendar_view_month_rounded),
                       _buildDateOption('เดือนที่แล้ว', 'lastMonth', Icons.history_rounded, isLocked: isFreePlan),
-                      const Divider(color: Color(0xFFF1F5F9), height: 24, thickness: 1.5),
+                      const Divider(color: Color(0xFFFAF9F6), height: 24, thickness: 1.5),
                       ListTile(
                         onTap: () {
                           Navigator.pop(context);
@@ -565,7 +565,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         leading: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
+                            color: const Color(0xFFFAF9F6),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(Icons.edit_calendar_rounded, size: 20, color: Color(0xFF475569)),
@@ -612,11 +612,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
         },
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        tileColor: isSelected ? const Color(0xFFEEF2FF) : Colors.transparent,
+        tileColor: isSelected ? const Color(0xFFFAF9F6) : Colors.transparent,
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF4F46E5) : (isLocked ? const Color(0xFFF8FAFC) : const Color(0xFFF1F5F9)),
+            color: isSelected ? const Color(0xFF1E293B) : (isLocked ? const Color(0xFFFAF9F6) : const Color(0xFFFAF9F6)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -630,13 +630,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           style: TextStyle(
             fontSize: 15,
             fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
-            color: isSelected ? const Color(0xFF4F46E5) : (isLocked ? const Color(0xFF94A3B8) : const Color(0xFF334155)),
+            color: isSelected ? const Color(0xFF1E293B) : (isLocked ? const Color(0xFF94A3B8) : const Color(0xFF334155)),
           ),
         ),
         trailing: isLocked 
           ? const Icon(Icons.workspace_premium_rounded, color: Color(0xFFF59E0B), size: 18) 
           : (isSelected
-            ? const Icon(Icons.check_circle_rounded, color: Color(0xFF4F46E5))
+            ? const Icon(Icons.check_circle_rounded, color: Color(0xFF1E293B))
             : null),
       ),
     );
@@ -689,8 +689,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: const Color(
-        0xFFF4F7FA,
-      ), // สีพื้นหลังเทาอมฟ้าสว่างๆ แบบแอป Modern
+        0xFFFAF9F6,
+      ), // สีพื้นหลังขาวไข่
       drawer: const AppSidebar(activeMenu: 'dashboard'),
       body: SafeArea(
         child: Column(
@@ -708,7 +708,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _fetchDashboardData,
-                      color: const Color(0xFF4F46E5),
+                      color: const Color(0xFF1E293B),
                       child: SingleChildScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(16),
@@ -806,7 +806,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9), // สีเทาอ่อนๆ
+                color: const Color(0xFFFAF9F6), // สีเทาอ่อนๆ
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -847,7 +847,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEEF2FF), // สีฟ้าอ่อน
+                        color: const Color(0xFFFAF9F6), // สีฟ้าอ่อน
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -855,7 +855,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF4F46E5),
+                          color: Color(0xFF1E293B),
                         ),
                       ),
                     ),
@@ -868,7 +868,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onPressed: () => _showAdvancedDatePicker(),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              side: const BorderSide(color: Color(0xFFEDE9E3)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -876,7 +876,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             child: const Row(
               children: [
-                Icon(Icons.calendar_month_rounded, size: 16, color: Color(0xFF4F46E5)),
+                Icon(Icons.calendar_month_rounded, size: 16, color: Color(0xFF1E293B)),
                 SizedBox(width: 6),
                 Icon(Icons.keyboard_arrow_down_rounded, size: 18),
               ],
@@ -898,7 +898,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEFF2F6)),
+        border: Border.all(color: const Color(0xFFFAF9F6)),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF0F172A).withOpacity(0.035),
@@ -917,7 +917,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: 'ยอดขาย',
                 value: _formatCurrency(totalRevenue),
                 icon: Icons.trending_up_rounded,
-                color: const Color(0xFF4F46E5),
+                color: const Color(0xFF1E293B),
                 isAnimating: _unsyncedCount > 0,
               ),
             ),
@@ -950,7 +950,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       width: 1,
       height: 54,
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: const Color(0xFFEFF2F6),
+      color: const Color(0xFFFAF9F6),
     );
   }
 
@@ -1067,7 +1067,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFEFF2F6)),
+            border: Border.all(color: const Color(0xFFFAF9F6)),
           ),
           child: content,
         );
@@ -1171,7 +1171,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
-              color: const Color(0xFFEEF2FF),
+              color: const Color(0xFFFAF9F6),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0xFFE0E7FF)),
             ),
@@ -1180,11 +1180,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today_rounded, size: 14, color: Color(0xFF4F46E5)),
+                    const Icon(Icons.calendar_today_rounded, size: 14, color: Color(0xFF1E293B)),
                     const SizedBox(width: 6),
                     Text(
                       _formatDateFriendly(dates[_selectedChartIndex!]),
-                      style: const TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.bold, fontSize: 13),
+                      style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ],
                 ),
@@ -1271,14 +1271,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEFF2F6)),
+        border: Border.all(color: const Color(0xFFFAF9F6)),
       ),
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _topProducts.length,
         separatorBuilder: (context, index) =>
-            const Divider(height: 16, color: Color(0xFFF1F5F9)),
+            const Divider(height: 16, color: Color(0xFFFAF9F6)),
         itemBuilder: (context, index) {
           final product = _topProducts[index];
           double pRev =
@@ -1292,8 +1292,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: index == 0
                       ? const Color(0xFFFEF08A)
                       : index == 1
-                      ? const Color(0xFFE2E8F0)
-                      : const Color(0xFFF1F5F9),
+                      ? const Color(0xFFEDE9E3)
+                      : const Color(0xFFFAF9F6),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -1388,12 +1388,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                  colors: [Color(0xFF15803D), Color(0xFF16A34A)],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6366F1).withOpacity(0.2),
+                    color: const Color(0xFF16A34A).withOpacity(0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1497,7 +1497,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFFEDE9E3)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -1559,8 +1559,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [
-                  Color(0xFF6D28D9), // ม่วงเข้ม
-                  Color(0xFF4F46E5), // ฟ้าม่วง
+                  Color(0xFF15803D), // ม่วงเข้ม
+                  Color(0xFF1E293B), // ฟ้าม่วง
                 ],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
@@ -1568,7 +1568,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF6D28D9).withOpacity(0.25),
+                  color: const Color(0xFF15803D).withOpacity(0.25),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
                 ),
@@ -1714,7 +1714,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 style: const TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF4F46E5),
+                                  color: Color(0xFF1E293B),
                                 ),
                               ),
                             ),
@@ -1728,10 +1728,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 colors: revenue > 0
                                     ? [
                                         const Color(0xFF818CF8),
-                                        const Color(0xFF4F46E5),
+                                        const Color(0xFF1E293B),
                                       ]
                                     : [
-                                        const Color(0xFFE2E8F0),
+                                        const Color(0xFFEDE9E3),
                                         const Color(0xFFCBD5E1),
                                       ],
                                 begin: Alignment.topCenter,
@@ -1811,7 +1811,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _paymentStats.length,
             separatorBuilder: (context, index) =>
-                const Divider(height: 24, color: Color(0xFFF1F5F9)),
+                const Divider(height: 24, color: Color(0xFFFAF9F6)),
             itemBuilder: (context, index) {
               final item = _paymentStats[index];
               final String rawMethod = item['method']?.toString() ?? 'other';
@@ -1823,7 +1823,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               // หาไอคอนและสีที่เหมาะสมตามช่องทางการชำระเงิน
               IconData methodIcon = Icons.payment_rounded;
-              Color methodColor = const Color(0xFF6366F1);
+              Color methodColor = const Color(0xFF16A34A);
               String displayName = rawMethod.toUpperCase();
 
               if (rawMethod.toLowerCase() == 'cash') {
@@ -1836,7 +1836,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 displayName = 'พร้อมเพย์ (PromptPay)';
               } else if (rawMethod.toLowerCase() == 'transfer') {
                 methodIcon = Icons.account_balance_rounded;
-                methodColor = const Color(0xFF8B5CF6);
+                methodColor = const Color(0xFF15803D);
                 displayName = 'โอนเงิน (Transfer)';
               }
 
@@ -1906,7 +1906,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: LinearProgressIndicator(
                       value: ratio,
                       minHeight: 6,
-                      backgroundColor: const Color(0xFFF1F5F9),
+                      backgroundColor: const Color(0xFFFAF9F6),
                       valueColor: AlwaysStoppedAnimation<Color>(methodColor),
                     ),
                   ),
@@ -1961,7 +1961,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: sortedTables.length,
             separatorBuilder: (context, index) =>
-                const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                const Divider(height: 20, color: Color(0xFFFAF9F6)),
             itemBuilder: (context, index) {
               final item = sortedTables[index];
               final String label = item['table']?.toString() ?? 'Walk-in';
@@ -2113,7 +2113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: sortedCashiers.length,
             separatorBuilder: (context, index) =>
-                const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                const Divider(height: 20, color: Color(0xFFFAF9F6)),
             itemBuilder: (context, index) {
               final item = sortedCashiers[index];
               final String name = item['name']?.toString() ?? 'พนักงาน';
@@ -2146,7 +2146,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // รูปโปรไฟล์พนักงาน
                   CircleAvatar(
                     radius: 18,
-                    backgroundColor: const Color(0xFFEEF2FF),
+                    backgroundColor: const Color(0xFFFAF9F6),
                     backgroundImage:
                         avatarUrl.isNotEmpty && avatarUrl.startsWith('http')
                         ? NetworkImage(avatarUrl)
@@ -2157,7 +2157,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ? name.substring(0, 1).toUpperCase()
                                 : 'P',
                             style: const TextStyle(
-                              color: Color(0xFF4F46E5),
+                              color: Color(0xFF1E293B),
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -2276,8 +2276,8 @@ class SmoothLineChartPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF6366F1).withOpacity(0.3),
-          const Color(0xFF6366F1).withOpacity(0.0),
+          const Color(0xFF16A34A).withOpacity(0.3),
+          const Color(0xFF16A34A).withOpacity(0.0),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
@@ -2285,7 +2285,7 @@ class SmoothLineChartPainter extends CustomPainter {
 
     // วาดเส้นกราฟสีม่วงๆ คมๆ
     final linePaint = Paint()
-      ..color = const Color(0xFF6366F1) // สีม่วงอมฟ้าตามดีไซน์
+      ..color = const Color(0xFF16A34A) // สีม่วงอมฟ้าตามดีไซน์
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0 // ปรับให้บางลง
       ..strokeCap = StrokeCap.round
@@ -2298,14 +2298,14 @@ class SmoothLineChartPainter extends CustomPainter {
       final p = points[selectedIndex!];
       
       final vLinePaint = Paint()
-        ..color = const Color(0xFF6366F1).withOpacity(0.3)
+        ..color = const Color(0xFF16A34A).withOpacity(0.3)
         ..strokeWidth = 1.5
         ..style = PaintingStyle.stroke;
       canvas.drawLine(Offset(p.dx, 0), Offset(p.dx, size.height), vLinePaint);
 
       final dotPaint = Paint()..color = Colors.white;
       final dotBorderPaint = Paint()
-        ..color = const Color(0xFF6366F1)
+        ..color = const Color(0xFF16A34A)
         ..strokeWidth = 2.5
         ..style = PaintingStyle.stroke;
 
@@ -2315,7 +2315,7 @@ class SmoothLineChartPainter extends CustomPainter {
 
     // --- วาดเส้นไกด์แนวนอน ---
     final gridPaint = Paint()
-      ..color = const Color(0xFFE2E8F0).withOpacity(0.5)
+      ..color = const Color(0xFFEDE9E3).withOpacity(0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
@@ -2399,3 +2399,8 @@ class _WigglingSyncIconState extends State<WigglingSyncIcon> with SingleTickerPr
     );
   }
 }
+
+
+
+
+

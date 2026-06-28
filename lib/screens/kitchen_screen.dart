@@ -21,13 +21,13 @@ class KitchenScreen extends StatefulWidget {
 }
 
 class _KitchenScreenState extends State<KitchenScreen> {
-  static const Color _bg = Color(0xFFFAF9F6); // สีขาวไข่ (Off-white)
+  static const Color _bg = Color(0xFFFAF8F4); // สีขาวไข่ (Egg-white)
   static const Color _surface = Colors.white;
-  static const Color _ink = Color(0xFF111827);
+  static const Color _ink = Color(0xFF292524); // Dark brown
   static const Color _muted = Color(0xFF64748B);
-  static const Color _line = Color(0xFFE2E8F0);
-  static const Color _pending = Color(0xFF15803D); // สีเขียวหลักสำหรับสถานะ "รอรับ"
-  static const Color _preparing = Color(0xFF059669); // สีเขียวอีกเฉดสำหรับสถานะ "กำลังทำ"
+  static const Color _line = Color(0xFFEDE9E3);
+  static const Color _pending = Color(0xFF292524); // Dark brown
+  static const Color _preparing = Color(0xFF292524); // Dark brown
 
   List<dynamic> _pendingOrders = [];
   List<dynamic> _preparingOrders = [];
@@ -245,6 +245,88 @@ class _KitchenScreenState extends State<KitchenScreen> {
     }
   }
 
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      decoration: const BoxDecoration(
+        color: Color(0xFFEDE9E3), // ขาวไข่เข้ม
+      ),
+      child: Row(
+        children: [
+          Material(
+            color: const Color(0xFF292524),
+            borderRadius: BorderRadius.circular(13),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(13),
+              onTap: () => Scaffold.of(context).openDrawer(),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x1A0B1730),
+                      blurRadius: 14,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.soup_kitchen_outlined,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ระบบจัดการครัว',
+                  style: TextStyle(
+                    color: Color(0xFF292524),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'จัดการออเดอร์ของร้าน',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 36,
+            height: 36,
+            child: IconButton.filledTonal(
+              padding: EdgeInsets.zero,
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF64748B),
+                side: const BorderSide(color: Color(0xFFEDE9E3)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              onPressed: _fetchKitchenOrders,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final displayOrders = _activeTab == 'pending'
@@ -254,60 +336,11 @@ class _KitchenScreenState extends State<KitchenScreen> {
     return Scaffold(
       backgroundColor: _bg,
       drawer: const AppSidebar(activeMenu: 'kitchen'),
-      appBar: AppBar(
-        backgroundColor: _bg,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leadingWidth: 72,
-        leading: Builder(
-          builder: (context) => Padding(
-            padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
-            child: GestureDetector(
-              onTap: () => Scaffold.of(context).openDrawer(),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: _surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _line),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.menu_rounded, color: _muted, size: 24),
-              ),
-            ),
-          ),
-        ),
-        title: const Text(
-          'ระบบจัดการครัว',
-          style: TextStyle(
-            color: _ink,
-            fontWeight: FontWeight.w900,
-            fontFamily: 'Kanit',
-            fontSize: 20,
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: IconButton.filledTonal(
-              style: IconButton.styleFrom(
-                backgroundColor: _surface,
-                foregroundColor: _muted,
-                side: const BorderSide(color: _line),
-              ),
-              icon: const Icon(Icons.refresh_rounded),
-              onPressed: _fetchKitchenOrders,
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
+      body: SafeArea(
+        child: Builder(
+          builder: (context) => Column(
+            children: [
+              _buildHeader(context),
           Container(
             margin: const EdgeInsets.fromLTRB(12, 12, 12, 12),
             padding: const EdgeInsets.all(4),
@@ -373,6 +406,8 @@ class _KitchenScreenState extends State<KitchenScreen> {
                   ),
           ),
         ],
+      ),
+      ),
       ),
     );
   }

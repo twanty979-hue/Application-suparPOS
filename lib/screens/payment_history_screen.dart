@@ -88,74 +88,112 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     return "${DateFormat('d MMM yyyy', 'th').format(date)} ${DateFormat('HH:mm').format(date)} น.";
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF475569)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'ประวัติการทำรายการ',
-              style: TextStyle(
-                color: Color(0xFF1E293B),
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
+  Widget _buildHeader(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 430;
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        compact ? 12 : 16,
+        8,
+        compact ? 12 : 16,
+        8,
+      ),
+      decoration: const BoxDecoration(
+        color: Color(0xFFEDE9E3),
+      ),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Scaffold.of(context).openDrawer();
+              }
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFDCD6CB),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: Color(0xFF292524),
+                size: 20,
               ),
             ),
-            Text(
-              'TRANSACTION LOGS & ACCREDITS',
-              style: TextStyle(
-                color: Color(0xFF94A3B8),
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ),
-        // --- 🌟 แถบสลับตัวเลือกประวัติชำระเงิน / ประวัติคอยน์ ---
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
+          ),
+          SizedBox(width: compact ? 12 : 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _buildSubTabButton(
-                    title: 'บิลชำระเงิน',
-                    isActive: _activeSubTab == 'billing',
-                    icon: Icons.receipt_long_rounded,
-                    onTap: () => setState(() => _activeSubTab = 'billing'),
+                Text(
+                  'ประวัติชำระเงิน',
+                  style: TextStyle(
+                    color: Color(0xFF292524),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                Expanded(
-                  child: _buildSubTabButton(
-                    title: 'ประวัติ Coins',
-                    isActive: _activeSubTab == 'coins',
-                    icon: Icons.monetization_on_rounded,
-                    onTap: () => setState(() => _activeSubTab = 'coins'),
+                SizedBox(height: 2),
+                Text(
+                  'ดูประวัติและสรุปยอดการชำระเงิน',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
-      body: _isLoading
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFEDE9E3),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF9F6),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFDCD6CB)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildSubTabButton(
+                      title: 'บิลชำระเงิน',
+                      isActive: _activeSubTab == 'billing',
+                      icon: Icons.receipt_long_rounded,
+                      onTap: () => setState(() => _activeSubTab = 'billing'),
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildSubTabButton(
+                      title: 'ประวัติ Coins',
+                      isActive: _activeSubTab == 'coins',
+                      icon: Icons.monetization_on_rounded,
+                      onTap: () => setState(() => _activeSubTab = 'coins'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _isLoading
           ? const SuparPosLoading(fullScreen: false)
           : _errorMessage != null
           ? Center(
@@ -173,6 +211,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                   ? _buildPaymentList()
                   : _buildCoinList(),
             ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -187,7 +229,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
+          color: isActive ? const Color(0xFFDCD6CB) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           boxShadow: isActive
               ? [
@@ -206,7 +248,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
               icon,
               size: 16,
               color: isActive
-                  ? const Color(0xFF4F46E5)
+                  ? const Color(0xFF292524)
                   : const Color(0xFF64748B),
             ),
             const SizedBox(width: 6),
@@ -214,7 +256,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
               title,
               style: TextStyle(
                 color: isActive
-                    ? const Color(0xFF4F46E5)
+                    ? const Color(0xFF292524)
                     : const Color(0xFF64748B),
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
@@ -235,7 +277,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       );
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       itemCount: _payments.length,
       itemBuilder: (context, index) {
         final bill = _payments[index];
@@ -243,9 +285,9 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFFFAF9F6),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
@@ -277,7 +319,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                       'แพ็กเกจ ${(bill['plan_detail'] ?? 'Premium Plan').toString().toUpperCase()}',
                       style: const TextStyle(
                         fontWeight: FontWeight.w900,
-                        fontSize: 14,
+                        fontSize: 11,
                         color: Color(0xFF1E293B),
                       ),
                     ),
@@ -295,7 +337,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
               Text(
                 _formatCurrency(bill['amount'] ?? 0),
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 13,
                   fontWeight: FontWeight.w900,
                   color: Color(0xFF0F172A),
                 ),
@@ -316,7 +358,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       );
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       itemCount: _coins.length,
       itemBuilder: (context, index) {
         final coinLog = _coins[index];
@@ -325,9 +367,9 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFFFAF9F6),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
@@ -361,7 +403,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                           'COIN TRANSACTION',
                       style: const TextStyle(
                         fontWeight: FontWeight.w900,
-                        fontSize: 14,
+                        fontSize: 11,
                         color: Color(0xFF1E293B),
                       ),
                     ),

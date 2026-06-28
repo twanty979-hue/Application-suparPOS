@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../login.dart';
 import '../api_service.dart';
 import '../screens/dashboard_screen.dart';
-import '../screens/db_inspector_screen.dart';
+
 import '../screens/inventory_screen.dart';
 import '../screens/kitchen_screen.dart';
 import '../screens/marketplace_screen.dart';
@@ -23,6 +23,7 @@ import '../screens/store_settings_screen.dart';
 import '../screens/theme_selection_screen.dart';
 import '../services/storage_service.dart';
 import '../services/profile_cache_service.dart';
+import '../db/database_helper.dart';
 import 'suparpos_navigation_loader.dart';
 
 class AppSidebar extends StatefulWidget {
@@ -43,6 +44,8 @@ class _AppSidebarState extends State<AppSidebar>
   String? _localAvatarPath;
   bool _hasInvitation = false;
   String _profileRole = 'unknown';
+  bool _isNavigating = false;
+  bool _showInventory = false;
 
   bool get _canManageStore => _profileRole.trim().toLowerCase() == 'owner';
 
@@ -53,9 +56,31 @@ class _AppSidebarState extends State<AppSidebar>
   static const _blue = Color(0xFF15803D); // Changed to Logo Green
   static const _blueSoft = Color(0xFFE8F8EC); // Changed to Soft Green
 
+  Future<void> _checkInventoryVisibility() async {
+    try {
+      final brandId = await StorageService.getBrandId();
+      if (brandId.isNotEmpty) {
+        final db = await DatabaseHelper.instance.database;
+        final result = await db.rawQuery(
+          'SELECT COUNT(*) as cnt FROM products WHERE brand_id = ? AND barcode IS NOT NULL AND barcode != ""',
+          [brandId],
+        );
+        final count = (result.first['cnt'] as int?) ?? 0;
+        if (mounted) {
+          setState(() {
+            _showInventory = count > 0;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Check inventory error: $e');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _checkInventoryVisibility();
     _magicAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 5600),
@@ -133,13 +158,13 @@ class _AppSidebarState extends State<AppSidebar>
   Widget build(BuildContext context) {
     final drawerWidth = MediaQuery.sizeOf(context).width < 280 ? 240.0 : 250.0;
 
-    return Drawer(
-      width: drawerWidth,
-      elevation: 0,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      child: SafeArea(
-        bottom: false,
+    return SafeArea(
+      bottom: false,
+      child: Drawer(
+        width: drawerWidth,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: Column(
           children: [
             _buildHeader(context),
@@ -170,20 +195,14 @@ class _AppSidebarState extends State<AppSidebar>
                     title: 'ใบเสร็จย้อนหลัง',
                     page: const ReceiptHistoryScreen(),
                   ),
-                  _buildMenuItem(
-                    context,
-                    menuKey: 'inventory',
-                    icon: Icons.inventory_2_outlined,
-                    title: 'ระบบคลังสินค้า',
-                    page: const InventoryScreen(),
-                  ),
-                  _buildMenuItem(
-                    context,
-                    menuKey: 'db_inspector',
-                    icon: Icons.storage_rounded,
-                    title: 'DB Inspector',
-                    page: const DbInspectorScreen(),
-                  ),
+                  if (_showInventory)
+                    _buildMenuItem(
+                      context,
+                      menuKey: 'inventory',
+                      icon: Icons.inventory_2_outlined,
+                      title: 'ระบบคลังสินค้า',
+                      page: const InventoryScreen(),
+                    ),
                   if (_canManageStore) ...[
                     _buildSectionDivider('จัดการร้าน'),
                     _buildMenuItem(
@@ -637,6 +656,8 @@ class _AppSidebarState extends State<AppSidebar>
     Widget page, {
     bool allowOffline = false,
   }) async {
+    if (_isNavigating) return;
+    
     if (!allowOffline && !await _hasInternet()) {
       if (!mounted || !context.mounted) return;
       await showDialog<void>(
@@ -671,14 +692,22 @@ class _AppSidebarState extends State<AppSidebar>
       return;
     }
     if (!mounted || !context.mounted) return;
+    
+    _isNavigating = true;
     final navigator = Navigator.of(context);
     navigator.pop();
 
     // ให้ Drawer มีเวลาเลื่อนปิดก่อนเล็กน้อย แล้วค่อยเปลี่ยนหน้าแบบต่อเนื่อง
     await Future<void>.delayed(const Duration(milliseconds: 110));
-    if (!mounted) return;
+    if (!mounted) {
+      _isNavigating = false;
+      return;
+    }
 
     navigator.pushReplacement(_smoothRoute(page));
+    if (mounted) {
+      _isNavigating = false;
+    }
   }
 
   PageRouteBuilder<void> _smoothRoute(Widget page) {

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -364,7 +364,7 @@ class _AddMasterProductModalState extends State<AddMasterProductModal> {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFF1F5F9),
+                      color: Color(0xFFFAF9F6),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -392,7 +392,7 @@ class _AddMasterProductModalState extends State<AddMasterProductModal> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: const BoxDecoration(
               color: Colors.white,
-              border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+              border: Border(top: BorderSide(color: Color(0xFFEDE9E3))),
             ),
             child: Row(
               children: [
@@ -402,7 +402,7 @@ class _AddMasterProductModalState extends State<AddMasterProductModal> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        side: const BorderSide(color: Color(0xFFEDE9E3)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -489,7 +489,7 @@ class _AddMasterProductModalState extends State<AddMasterProductModal> {
   InputDecoration _compactDecoration(String label, {String? hint}) {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      borderSide: const BorderSide(color: Color(0xFFEDE9E3)),
     );
     return InputDecoration(
       labelText: label,
@@ -501,7 +501,7 @@ class _AddMasterProductModalState extends State<AddMasterProductModal> {
       border: border,
       enabledBorder: border,
       focusedBorder: border.copyWith(
-        borderSide: const BorderSide(color: Color(0xFF2563EB)),
+        borderSide: const BorderSide(color: Color(0xFF16A34A)),
       ),
     );
   }
@@ -521,7 +521,7 @@ class _AddMasterProductModalState extends State<AddMasterProductModal> {
       style: const TextStyle(fontSize: 11),
       decoration: _compactDecoration(label, hint: hint).copyWith(
         filled: readOnly,
-        fillColor: readOnly ? const Color(0xFFF1F5F9) : Colors.white,
+        fillColor: readOnly ? const Color(0xFFFAF9F6) : Colors.white,
       ),
       validator: validator,
     );
@@ -671,10 +671,10 @@ class _AddMasterProductModalState extends State<AddMasterProductModal> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: const Color(0xFFFAF9F6),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0xFFE2E8F0),
+            color: const Color(0xFFEDE9E3),
             style: BorderStyle.solid,
           ),
         ),
@@ -763,7 +763,7 @@ class _AddMasterProductModalState extends State<AddMasterProductModal> {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: const BorderSide(color: Color(0xFFEDE9E3)),
             ),
           ),
           validator: (v) =>
@@ -820,7 +820,7 @@ class _AddMasterProductModalState extends State<AddMasterProductModal> {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: const Color(0xFFEDE9E3)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -1016,7 +1016,7 @@ class _AddMasterProductModalState extends State<AddMasterProductModal> {
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             filled: _isEditMode,
-            fillColor: _isEditMode ? const Color(0xFFF1F5F9) : Colors.white,
+            fillColor: _isEditMode ? const Color(0xFFFAF9F6) : Colors.white,
           ),
         ),
       ],
@@ -1109,7 +1109,7 @@ class _AddMasterCategoryDialogState extends State<AddMasterCategoryDialog> {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFF1F5F9),
+                      color: Color(0xFFFAF9F6),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -1180,14 +1180,14 @@ class _AddMasterCategoryDialogState extends State<AddMasterCategoryDialog> {
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  borderSide: const BorderSide(color: Color(0xFFEDE9E3)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  borderSide: const BorderSide(color: Color(0xFFEDE9E3)),
                 ),
                 filled: true,
-                fillColor: const Color(0xFFF8FAFC),
+                fillColor: const Color(0xFFFAF9F6),
               ),
             ),
             const SizedBox(height: 24),
@@ -1200,7 +1200,7 @@ class _AddMasterCategoryDialogState extends State<AddMasterCategoryDialog> {
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         padding: EdgeInsets.zero,
-                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        side: const BorderSide(color: Color(0xFFEDE9E3)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -1259,3 +1259,4 @@ class _AddMasterCategoryDialogState extends State<AddMasterCategoryDialog> {
     );
   }
 }
+

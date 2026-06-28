@@ -33,7 +33,7 @@ class PosTopBar extends StatelessWidget {
     int? badge,
   }) {
     final isSelected = activeTab == tab;
-    final activeColor = tab == 'pos' ? AppColors.orange500 : AppColors.slate800;
+    final activeColor = const Color(0xFF292524); // สีดำออกน้ำตาล
 
     return Expanded(
       child: GestureDetector(
@@ -65,7 +65,7 @@ class PosTopBar extends StatelessWidget {
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? Colors.white : AppColors.slate400,
+                  color: isSelected ? Colors.white : const Color(0xFF64748B),
                   size: 20,
                 ),
                 if (label.isNotEmpty) ...[
@@ -76,7 +76,7 @@ class PosTopBar extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.slate400,
+                        color: isSelected ? Colors.white : const Color(0xFF64748B),
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
                         fontFamily: 'Kanit',
@@ -130,26 +130,17 @@ class PosTopBar extends StatelessWidget {
         width: size,
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: borderColor),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor,
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(12), // Fix radius for menu button
         ),
         child: Icon(icon, color: iconColor, size: 24),
       ),
     );
   }
 
-  @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 768;
     final isCompact = MediaQuery.of(context).size.width < 390;
-    final barHeight = isDesktop ? 72.0 : 56.0;
+    final barHeight = isDesktop ? 64.0 : 48.0;
     final radius = isDesktop ? 20.0 : 12.0;
     final gap = isDesktop ? 12.0 : 8.0;
 
@@ -159,31 +150,23 @@ class PosTopBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _squareButton(
-            size: barHeight,
-            radius: radius,
-            color: Colors.white,
-            borderColor: AppColors.slate100,
-            shadowColor: Colors.black.withOpacity(0.04),
+            size: barHeight, // The square button width now matches the bar height
+            radius: 12.0,
+            color: const Color(0xFFDCD6CB), // ขาวไข่แบบเข้มขึ้น
+            borderColor: Colors.transparent,
+            shadowColor: Colors.transparent,
             icon: Icons.menu_rounded,
-            iconColor: AppColors.slate500,
+            iconColor: const Color(0xFF292524),
             onTap: onMenuPressed,
           ),
           SizedBox(width: gap),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(radius),
-                border: Border.all(color: AppColors.slate100),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                color: const Color(0xFFDCD6CB), // ขาวไข่แบบเข้มขึ้น
+                borderRadius: BorderRadius.circular(16), // Match products_top_bar
               ),
-              padding: EdgeInsets.all(isDesktop ? 6 : 4),
+              padding: EdgeInsets.all(4),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -266,7 +249,7 @@ class _AnimatedQuotaButtonState extends State<AnimatedQuotaButton>
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 768;
-    final size = isDesktop ? 72.0 : 56.0;
+    final size = isDesktop ? 64.0 : 48.0; // Match new barHeight
     final radius = isDesktop ? 20.0 : 12.0;
     
     final normalizedPlan = widget.planType.toLowerCase().trim();
@@ -283,20 +266,13 @@ class _AnimatedQuotaButtonState extends State<AnimatedQuotaButton>
         child: Container(
           width: size,
           decoration: BoxDecoration(
-            color: widget.isLocked ? AppColors.rose50 : Colors.white,
-            borderRadius: BorderRadius.circular(radius),
+            color: widget.isLocked ? AppColors.rose50 : const Color(0xFFDCD6CB),
+            borderRadius: BorderRadius.circular(12), // Match menu button
             border: Border.all(
               color: widget.isLocked
                   ? const Color(0xFFFCA5A5)
-                  : AppColors.slate100,
+                  : Colors.transparent,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -305,7 +281,7 @@ class _AnimatedQuotaButtonState extends State<AnimatedQuotaButton>
                 widget.isLocked
                     ? Icons.lock_rounded
                     : Icons.qr_code_scanner_rounded,
-                color: widget.isLocked ? AppColors.rose500 : AppColors.slate500,
+                color: widget.isLocked ? AppColors.rose500 : const Color(0xFF292524),
                 size: isDesktop ? 22 : 18,
               ),
               const SizedBox(height: 2),
@@ -316,7 +292,7 @@ class _AnimatedQuotaButtonState extends State<AnimatedQuotaButton>
                 style: TextStyle(
                   color: widget.isLocked
                       ? AppColors.rose500
-                      : AppColors.slate400,
+                      : const Color(0xFF64748B),
                   fontSize: isDesktop ? 10 : 9,
                   fontWeight: FontWeight.w800,
                   fontFamily: 'Kanit',
@@ -341,15 +317,15 @@ class _AnimatedQuotaButtonState extends State<AnimatedQuotaButton>
       displayIcon = Icons.military_tech_rounded;
       isPulsing = true;
     } else if (normalizedPlan == 'pro') {
-      // 🌟 PRO: นีออนม่วงสว่าง (แสงม่วงวูบวาบ)
-      iconColor = const Color(0xFF9333EA);
-      insideBgColor = Colors.white;
+      // 🌟 PRO: ขาวสว่าง (พื้นหลังม่วง)
+      iconColor = Colors.white; // ขาว
+      insideBgColor = const Color(0xFF9333EA); // พื้นหลังม่วง
       displayIcon = Icons.star_rounded;
       isPulsing = true;
     } else {
       // 🌟 BASIC: ขาวสีกรมท่า คลีนๆ (ไม่วูบวาบ)
-      iconColor = AppColors.blue600;
-      insideBgColor = Colors.white;
+      iconColor = const Color(0xFF292524);
+      insideBgColor = const Color(0xFFDCD6CB);
       displayIcon = Icons.storefront_rounded;
       isPulsing = false;
     }

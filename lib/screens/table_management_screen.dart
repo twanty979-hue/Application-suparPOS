@@ -1,13 +1,13 @@
-// lib/screens/table_management_screen.dart
+﻿// lib/screens/table_management_screen.dart
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart'; // 🌟 เก็บไว้ใช้จำค่า List/Grid View (ถูกต้องแล้ว)
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 
-import '../api_service.dart'; // 🌟 นำเข้า ApiService ที่ฉลาดๆ ของเรา
-import 'package:Pos_Foodscan/services/storage_service.dart'; // 🌟 ใช้ตู้เซฟดิจิทัล
+import '../api_service.dart';
+import 'package:Pos_Foodscan/services/storage_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_sidebar.dart';
 import '../widgets/suparpos_loading.dart';
@@ -64,7 +64,6 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     }
   }
 
-  // 🌟 SharedPreferences ใช้สำหรับจำการตั้งค่าจุกจิกแบบนี้ ถูกต้องที่สุดแล้วครับ!
   Future<void> _loadSavedViewMode() async {
     final prefs = await SharedPreferences.getInstance();
     final savedValue = prefs.getBool(_viewModePrefKey);
@@ -152,7 +151,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
           child: Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFFFAF9F6), // Replaced Colors.white
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
@@ -183,7 +182,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   child: const Text(
                     'N',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFFFAF9F6), // Replaced Colors.white
                       fontSize: 40,
                       fontWeight: FontWeight.w900,
                       fontFamily: 'Arial',
@@ -220,7 +219,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                     },
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: const Color(0xFFF1F5F9),
+                      backgroundColor: const Color(0xFFFAF9F6),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -297,7 +296,6 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     ).toString();
   }
 
-  // 🌟 เคลียร์ลิ้นชักขยะทิ้ง ดึงเฉพาะบัตร VIP จากตู้เซฟ
   Future<void> _loadSessionAndFetch() async {
     try {
       final savedToken = await StorageService.getToken();
@@ -324,7 +322,6 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     }
   }
 
-  // 🚀 ดึง API แบบ Auto-switch Environment
   Future<void> _fetchTablesData() async {
     setState(() {
       isLoading = true;
@@ -334,7 +331,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       final response = await http.get(
         Uri.parse(
           "${ApiService.baseUrl}/tables",
-        ), // 🚀 ใช้ ApiService แทน dotenv
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $accessToken',
@@ -362,13 +359,12 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     }
   }
 
-  // 🚀 บันทึกข้อมูลโต๊ะแบบ Auto-switch Environment
   Future<void> _saveTableData(Map<String, dynamic> payload) async {
     try {
       final response = await http.post(
         Uri.parse(
           "${ApiService.baseUrl}/tables",
-        ), // 🚀 ใช้ ApiService แทน dotenv
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $accessToken',
@@ -397,13 +393,12 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     }
   }
 
-  // 🚀 ลบข้อมูลโต๊ะแบบ Auto-switch Environment
   Future<void> _deleteTable(String tableId) async {
     try {
       final response = await http.delete(
         Uri.parse(
           "${ApiService.baseUrl}/tables?id=$tableId",
-        ), // 🚀 ใช้ ApiService แทน dotenv
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $accessToken',
@@ -465,7 +460,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: const Color(0xFFFAF9F6), // Replaced Colors.white
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
@@ -539,7 +534,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                               style: ElevatedButton.styleFrom(
                                 elevation: 0,
                                 backgroundColor: Colors.red.shade500,
-                                foregroundColor: Colors.white,
+                                foregroundColor: const Color(0xFFFAF9F6), // Replaced Colors.white
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -574,7 +569,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             if (!didPop) requestClose();
           },
           child: Dialog(
-            backgroundColor: Colors.white,
+            backgroundColor: const Color(0xFFFAF9F6), // Replaced Colors.white
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
             ),
@@ -671,7 +666,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                           child: Text(
                             initialTableData == null ? 'บันทึกโต๊ะ' : 'บันทึกการแก้ไข',
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Color(0xFFFAF9F6), // Replaced Colors.white
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
@@ -706,7 +701,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
         child: FloatingActionButton(
           heroTag: 'add_table',
           backgroundColor: const Color(0xFF0F172A),
-          foregroundColor: Colors.white,
+          foregroundColor: const Color(0xFFFAF9F6), // Replaced Colors.white
           elevation: 6,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -762,15 +757,14 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
         children: [
           Row(
             children: [
-              // แถบค้นหาตามดีไซน์ master_product_screen
               Expanded(
                 child: Container(
                   height: 38,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: const Color(0xFFFAF9F6), // Replaced Colors.white
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: const Color(0xFFEDE9E3)),
                   ),
                   child: Row(
                     children: [
@@ -849,8 +843,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 92),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 150, // โมดูลเล็กเป็นสี่เหลี่ยมจัตุรัส
-        mainAxisExtent: _canUseNfc && _nfcWriteMode ? 120 : 96, // ปรับความสูงลงเมื่อไม่มีปุ่ม
+        maxCrossAxisExtent: 150,
+        mainAxisExtent: _canUseNfc && _nfcWriteMode ? 120 : 96,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
@@ -871,12 +865,12 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   Widget _buildTableCard(dynamic table) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFFAF9F6), // Replaced Colors.white
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: _nfcWriteMode
               ? const Color(0xFF10B981)
-              : const Color(0xFFE2E8F0),
+              : const Color(0xFFEDE9E3),
           width: _nfcWriteMode ? 1.4 : 1,
         ),
         boxShadow: const [
@@ -891,7 +885,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
         onTap: _canUseNfc && _nfcWriteMode
             ? () => _writeTableToNfc(table)
             : () => _openTableFormModal(initialTableData: table),
-        glowColor: _nfcWriteMode ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+        glowColor: _nfcWriteMode ? const Color(0xFF10B981) : const Color(0xFF0F172A), // Replaced Color(0xFF3B82F6)
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: _canUseNfc && _nfcWriteMode
@@ -920,12 +914,12 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFFAF9F6), // Replaced Colors.white
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: _nfcWriteMode
               ? const Color(0xFF10B981)
-              : const Color(0xFFE2E8F0),
+              : const Color(0xFFEDE9E3),
           width: _nfcWriteMode ? 1.4 : 1,
         ),
       ),
@@ -933,7 +927,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
         onTap: _canUseNfc && _nfcWriteMode
             ? () => _writeTableToNfc(table)
             : () => _openTableFormModal(initialTableData: table),
-        glowColor: _nfcWriteMode ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+        glowColor: _nfcWriteMode ? const Color(0xFF10B981) : const Color(0xFF0F172A), // Replaced Color(0xFF3B82F6)
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -1021,8 +1015,6 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     );
   }
 
-  // _buildTableIdentity removed
-
   Widget _buildTableNumber(dynamic table, {bool large = false}) {
     return Container(
       width: large ? 60 : 42,
@@ -1037,7 +1029,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          color: Colors.white,
+          color: const Color(0xFFFAF9F6), // Replaced Colors.white
           fontWeight: FontWeight.w900,
           fontSize: large ? 20 : 16,
         ),
@@ -1050,9 +1042,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       height: 38,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFFAF9F6), // Replaced Colors.white
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFFEDE9E3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1075,7 +1067,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   Widget _buildNfcModeButton() {
     if (!_canUseNfc) return const SizedBox.shrink();
     return Material(
-      color: _nfcWriteMode ? const Color(0xFF10B981) : Colors.white,
+      color: _nfcWriteMode ? const Color(0xFF10B981) : const Color(0xFFFAF9F6), // Replaced Colors.white
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -1091,14 +1083,14 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             border: Border.all(
               color: _nfcWriteMode
                   ? const Color(0xFF10B981)
-                  : const Color(0xFFE2E8F0),
+                  : const Color(0xFFEDE9E3),
             ),
           ),
           alignment: Alignment.center,
           child: Text(
             'N',
             style: TextStyle(
-              color: _nfcWriteMode ? Colors.white : const Color(0xFF64748B),
+              color: _nfcWriteMode ? const Color(0xFFFAF9F6) : const Color(0xFF64748B), // Replaced Colors.white
               fontSize: 20,
               fontWeight: FontWeight.w900,
               fontFamily: 'Arial',
@@ -1125,7 +1117,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
           height: 40,
           child: Icon(
             icon,
-            color: selected ? Colors.white : const Color(0xFF64748B),
+            color: selected ? const Color(0xFFFAF9F6) : const Color(0xFF64748B), // Replaced Colors.white
             size: 20,
           ),
         ),
@@ -1146,6 +1138,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFFFAF9F6), // Replaced default white dialog background
         title: const Text('ลบโต๊ะ'),
         content: const Text('คุณแน่ใจหรือไม่ว่าต้องการลบโต๊ะนี้?'),
         actions: [

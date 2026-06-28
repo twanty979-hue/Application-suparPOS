@@ -1,4 +1,4 @@
-// lib/screens/master_product_screen.dart
+﻿// lib/screens/master_product_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -236,7 +236,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFAF9F6),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -275,7 +275,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFFEDE9E3)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.015),
@@ -302,7 +302,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               const ColoredBox(
-                                color: Color(0xFFF1F5F9),
+                                color: Color(0xFFFAF9F6),
                                 child: Center(
                                   child: Icon(
                                     Icons.broken_image_outlined,
@@ -313,7 +313,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                               ),
                         )
                       : const ColoredBox(
-                          color: Color(0xFFF1F5F9),
+                          color: Color(0xFFFAF9F6),
                           child: Center(
                             child: Icon(
                               Icons.inventory_2_outlined,
@@ -381,7 +381,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: const Color(0xFFFAF9F6),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -402,7 +402,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFFEDE9E3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -529,7 +529,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: const Color(0xFFEDE9E3)),
                           ),
                           child: Row(
                             children: [
@@ -598,7 +598,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                               borderRadius: BorderRadius.circular(24),
                               border: isSelected
                                   ? null
-                                  : Border.all(color: const Color(0xFFE2E8F0)),
+                                  : Border.all(color: const Color(0xFFEDE9E3)),
                               boxShadow: isSelected
                                   ? [
                                       BoxShadow(
@@ -718,7 +718,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: const Color(0xFFE2E8F0),
+                                  color: const Color(0xFFEDE9E3),
                                 ),
                                 boxShadow: [
                                   BoxShadow(
@@ -739,7 +739,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                                       child: Container(
                                         width: double.infinity,
                                         decoration: const BoxDecoration(
-                                          color: Color(0xFFF8FAFC),
+                                          color: Color(0xFFFAF9F6),
                                           borderRadius: BorderRadius.vertical(
                                             top: Radius.circular(19),
                                           ),
@@ -764,7 +764,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                                                             stackTrace,
                                                           ) => Container(
                                                             color: const Color(
-                                                              0xFFF1F5F9,
+                                                              0xFFFAF9F6,
                                                             ),
                                                             child: const Center(
                                                               child: Icon(
@@ -780,7 +780,7 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
                                                     )
                                                   : Container(
                                                       color: const Color(
-                                                        0xFFF1F5F9,
+                                                        0xFFFAF9F6,
                                                       ),
                                                       child: const Center(
                                                         child: Icon(
@@ -854,3 +854,5 @@ class _MasterProductScreenState extends State<MasterProductScreen> {
     );
   }
 }
+
+

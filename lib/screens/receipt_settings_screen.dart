@@ -188,13 +188,13 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
     drawText(
       'ใบเสร็จรับเงินอย่างย่อ',
       55,
-      fontSize: 18,
+      fontSize: 11,
       align: TextAlign.center,
     );
     drawText(
       '------------------------------------------',
       85,
-      fontSize: 16,
+      fontSize: 13,
       align: TextAlign.center,
     );
     drawText('วันที่: 24 พ.ค. 2026 12:30', 110, fontSize: 18);
@@ -202,19 +202,19 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
     drawText(
       '------------------------------------------',
       160,
-      fontSize: 16,
+      fontSize: 13,
       align: TextAlign.center,
     );
     drawText('1x ข้าวมันไก่ต้ม', 185, fontSize: 18);
-    drawText('50.00', 185, fontSize: 18, align: TextAlign.right);
+    drawText('50.00', 185, fontSize: 11, align: TextAlign.right);
     drawText('1x กะเพราหมูสับไข่ดาว', 215, fontSize: 18);
-    drawText('65.00', 215, fontSize: 18, align: TextAlign.right);
+    drawText('65.00', 215, fontSize: 11, align: TextAlign.right);
     drawText('2x น้ำแข็งเปล่า', 245, fontSize: 18);
-    drawText('4.00', 245, fontSize: 18, align: TextAlign.right);
+    drawText('4.00', 245, fontSize: 11, align: TextAlign.right);
     drawText(
       '------------------------------------------',
       275,
-      fontSize: 16,
+      fontSize: 13,
       align: TextAlign.center,
     );
     drawText('รวมทั้งสิ้น (Total):', 305, fontSize: 21);
@@ -222,11 +222,11 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
     drawText(
       '------------------------------------------',
       335,
-      fontSize: 16,
+      fontSize: 13,
       align: TextAlign.center,
     );
-    drawText('ขอบคุณที่ใช้บริการ', 365, fontSize: 18, align: TextAlign.center);
-    drawText('Powered by FoodScan', 395, fontSize: 16, align: TextAlign.center);
+    drawText('ขอบคุณที่ใช้บริการ', 365, fontSize: 11, align: TextAlign.center);
+    drawText('Powered by FoodScan', 395, fontSize: 13, align: TextAlign.center);
 
     final picture = recorder.endRecording();
     final imageUi = await picture.toImage(width.toInt(), height.toInt());
@@ -335,7 +335,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FC),
+      backgroundColor: const Color(0xFFEDE9E3),
       drawer: const AppSidebar(activeMenu: 'settings'),
       body: SafeArea(
         child: Builder(
@@ -378,11 +378,16 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 430;
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 12 : 16,
+        8,
+        compact ? 12 : 16,
+        8,
+      ),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE9EEF6))),
+        color: Color(0xFFEDE9E3),
       ),
       child: Row(
         children: [
@@ -396,20 +401,20 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
             },
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              width: 42,
-              height: 42,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: AppColors.slate900,
+                color: const Color(0xFFDCD6CB),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
                 Icons.receipt_long_outlined,
-                color: Colors.white,
-                size: 22,
+                color: Color(0xFF292524),
+                size: 20,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: compact ? 12 : 16),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -417,8 +422,8 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
                 Text(
                   'ตั้งค่าใบเสร็จ',
                   style: TextStyle(
-                    color: AppColors.slate900,
-                    fontSize: 19,
+                    color: Color(0xFF292524),
+                    fontSize: 11,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -426,7 +431,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
                 Text(
                   'จัดการเครื่องพิมพ์และตัวอย่างใบเสร็จ',
                   style: TextStyle(
-                    color: AppColors.slate400,
+                    color: Color(0xFF64748B),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -435,22 +440,21 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
             ),
           ),
           SizedBox(
-            height: 42,
+            height: 36,
             child: ElevatedButton.icon(
               onPressed: _saveSettings,
-              icon: const Icon(Icons.save_outlined, size: 18),
+              icon: const Icon(Icons.save_outlined, size: 16),
               label: const Text(
                 'บันทึก',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.slate900,
+                backgroundColor: const Color(0xFF292524),
                 foregroundColor: Colors.white,
-                elevation: 8,
-                shadowColor: AppColors.slate900.withOpacity(0.22),
-                padding: const EdgeInsets.symmetric(horizontal: 15),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
@@ -471,7 +475,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
             value: _isPermissionGranted
                 ? '${_devices.length} อุปกรณ์'
                 : 'รอสิทธิ์',
-            color: AppColors.blue600,
+            color: const Color(0xFF292524),
           ),
         ),
         const SizedBox(width: 12),
@@ -518,7 +522,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
               BoxShadow(
                 color: isActive
                     ? color.withOpacity(0.14)
-                    : AppColors.slate900.withOpacity(0.04),
+                    : const Color(0xFF292524).withOpacity(0.04),
                 blurRadius: isActive ? 18 : 12,
                 offset: const Offset(0, 7),
               ),
@@ -549,7 +553,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: AppColors.slate900,
+                              color: const Color(0xFF292524),
                               fontSize: 13,
                               fontWeight: FontWeight.w900,
                             ),
@@ -609,8 +613,8 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
                 child: Text(
                   'จำนวนใบต่อครั้ง',
                   style: TextStyle(
-                    color: AppColors.slate900,
-                    fontSize: 14,
+                    color: const Color(0xFF292524),
+                    fontSize: 11,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -645,8 +649,8 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
                       Text(
                         'พิมพ์เมื่อออเดอร์เข้า',
                         style: TextStyle(
-                          color: AppColors.slate900,
-                          fontSize: 14,
+                          color: const Color(0xFF292524),
+                          fontSize: 11,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -684,10 +688,10 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       child: OutlinedButton(
         onPressed: () => setState(() => _receiptCopies = copies),
         style: OutlinedButton.styleFrom(
-          backgroundColor: isActive ? AppColors.slate900 : Colors.white,
+          backgroundColor: isActive ? const Color(0xFF292524) : Colors.white,
           foregroundColor: isActive ? Colors.white : AppColors.slate700,
           side: BorderSide(
-            color: isActive ? AppColors.slate900 : AppColors.slate200,
+            color: isActive ? const Color(0xFF292524) : AppColors.slate200,
             width: 1.2,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -707,8 +711,8 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
     return _buildSettingsCard(
       key: const ValueKey('bluetooth'),
       icon: Icons.bluetooth_rounded,
-      iconColor: AppColors.blue600,
-      iconBg: AppColors.blue50,
+      iconColor: const Color(0xFF292524),
+      iconBg: const Color(0xFFEDE9E3),
       title: 'ระบบ Bluetooth',
       subtitle: 'เลือกเครื่องพิมพ์ที่จับคู่ไว้กับเครื่องนี้',
       child: Column(
@@ -731,7 +735,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
                       d.name ?? 'Unknown printer',
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: AppColors.slate800,
+                        color: const Color(0xFF292524),
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -788,8 +792,8 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
             keyboardType: TextInputType.number,
             onChanged: (_) => setState(() {}),
             style: const TextStyle(
-              color: AppColors.slate900,
-              fontSize: 15,
+              color: const Color(0xFF292524),
+              fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
             decoration: _inputDecoration(
@@ -857,12 +861,12 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
           width: 220,
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFFFAF9F6),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.slate200),
             boxShadow: [
               BoxShadow(
-                color: AppColors.slate900.withOpacity(0.06),
+                color: const Color(0xFF292524).withOpacity(0.06),
                 blurRadius: 18,
                 offset: const Offset(0, 10),
               ),
@@ -873,7 +877,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
               const Text(
                 'SuparPOS',
                 style: TextStyle(
-                  color: AppColors.slate900,
+                  color: const Color(0xFF292524),
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
                 ),
@@ -923,7 +927,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
               name,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: AppColors.slate800,
+                color: const Color(0xFF292524),
                 fontSize: 11,
                 fontWeight: bold ? FontWeight.w900 : FontWeight.w700,
               ),
@@ -932,7 +936,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
           Text(
             amount,
             style: TextStyle(
-              color: AppColors.slate900,
+              color: const Color(0xFF292524),
               fontSize: 11,
               fontWeight: bold ? FontWeight.w900 : FontWeight.w700,
             ),
@@ -969,7 +973,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
     return Container(
       key: key,
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -993,8 +997,8 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
                     Text(
                       title,
                       style: const TextStyle(
-                        color: AppColors.slate900,
-                        fontSize: 18,
+                        color: const Color(0xFF292524),
+                        fontSize: 11,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -1027,7 +1031,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
     required VoidCallback? onPressed,
   }) {
     return SizedBox(
-      height: 48,
+      height: 36,
       child: ElevatedButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, size: 18),
@@ -1036,7 +1040,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.slate900,
+          backgroundColor: const Color(0xFF292524),
           foregroundColor: Colors.white,
           disabledBackgroundColor: AppColors.slate200,
           disabledForegroundColor: AppColors.slate400,
@@ -1055,7 +1059,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
     required VoidCallback onPressed,
   }) {
     return SizedBox(
-      height: 48,
+      height: 36,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, size: 18),
@@ -1077,19 +1081,19 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
-      height: 54,
+      height: 40,
       child: ElevatedButton.icon(
         onPressed: _saveSettings,
         icon: const Icon(Icons.save_outlined, size: 19),
         label: const Text(
           'บันทึกการตั้งค่า',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.slate900,
+          backgroundColor: const Color(0xFF292524),
           foregroundColor: Colors.white,
           elevation: 10,
-          shadowColor: AppColors.slate900.withOpacity(0.2),
+          shadowColor: const Color(0xFF292524).withOpacity(0.2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
@@ -1100,7 +1104,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
 
   BoxDecoration _cardDecoration({double radius = 24}) {
     return BoxDecoration(
-      color: Colors.white,
+      color: const Color(0xFFFAF9F6),
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(color: const Color(0xFFEAF0F7)),
       boxShadow: [
@@ -1128,7 +1132,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       ),
       hintStyle: const TextStyle(
         color: AppColors.slate300,
-        fontSize: 14,
+        fontSize: 11,
         fontWeight: FontWeight.w700,
       ),
       prefixIcon: prefixIcon == null
@@ -1147,7 +1151,7 @@ class _ReceiptSettingsScreenState extends State<ReceiptSettingsScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(13),
-        borderSide: const BorderSide(color: AppColors.slate900, width: 1.4),
+        borderSide: const BorderSide(color: const Color(0xFF292524), width: 1.4),
       ),
     );
   }

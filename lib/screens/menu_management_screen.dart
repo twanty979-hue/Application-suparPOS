@@ -1,4 +1,4 @@
-// lib/screens/menu_management_screen.dart
+﻿// lib/screens/menu_management_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -201,7 +201,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFAF9F6),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -243,7 +243,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
           border: Border.all(
             color: isRecommended
                 ? const Color(0xFFF59E0B)
-                : const Color(0xFFE2E8F0),
+                : const Color(0xFFEDE9E3),
             width: isRecommended ? 2 : 1,
           ),
           boxShadow: [
@@ -267,7 +267,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) =>
                             const ColoredBox(
-                              color: Color(0xFFF1F5F9),
+                              color: Color(0xFFFAF9F6),
                               child: Center(
                                 child: Icon(
                                   Icons.broken_image_outlined,
@@ -278,7 +278,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                             ),
                       )
                     : const ColoredBox(
-                        color: Color(0xFFF1F5F9),
+                        color: Color(0xFFFAF9F6),
                         child: Center(
                           child: Icon(
                             Icons.image_outlined,
@@ -459,7 +459,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFFEDE9E3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -585,7 +585,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(color: const Color(0xFFEDE9E3)),
                       ),
                       child: Row(
                         children: [
@@ -650,7 +650,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                           borderRadius: BorderRadius.circular(24),
                           border: isSelected
                               ? null
-                              : Border.all(color: const Color(0xFFE2E8F0)),
+                              : Border.all(color: const Color(0xFFEDE9E3)),
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
@@ -777,7 +777,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                               border: Border.all(
                                 color: isRecommended
                                     ? const Color(0xFFF59E0B)
-                                    : const Color(0xFFF1F5F9),
+                                    : const Color(0xFFFAF9F6),
                                 width: isRecommended ? 2 : 1,
                               ),
                               boxShadow: [
@@ -796,7 +796,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                                   child: Container(
                                     width: double.infinity,
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFFF8FAFC),
+                                      color: Color(0xFFFAF9F6),
                                       borderRadius: BorderRadius.vertical(
                                         top: Radius.circular(19),
                                       ),
@@ -821,7 +821,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                                                         stackTrace,
                                                       ) => Container(
                                                         color: const Color(
-                                                          0xFFF1F5F9,
+                                                          0xFFFAF9F6,
                                                         ),
                                                         child: const Center(
                                                           child: Icon(
@@ -837,7 +837,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
                                                 )
                                               : Container(
                                                   color: const Color(
-                                                    0xFFF1F5F9,
+                                                    0xFFFAF9F6,
                                                   ),
                                                   child: const Center(
                                                     child: Icon(
@@ -901,3 +901,5 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
     );
   }
 }
+
+

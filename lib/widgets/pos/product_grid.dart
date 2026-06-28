@@ -17,6 +17,7 @@ class ProductGrid extends StatelessWidget {
   calculatePrice;
   final String Function(double) formatCurrency;
   final bool showProductImages;
+  final bool showProductNames;
 
   final VoidCallback onCameraPressed;
   final ValueChanged<String> onBarcodeSubmitted;
@@ -32,6 +33,7 @@ class ProductGrid extends StatelessWidget {
     required this.calculatePrice,
     required this.formatCurrency,
     required this.showProductImages,
+    required this.showProductNames,
     required this.onCameraPressed,
     required this.onBarcodeSubmitted,
   });
@@ -177,6 +179,7 @@ class ProductGrid extends StatelessWidget {
                             hasDiscount: hasDiscount,
                             formatCurrency: formatCurrency,
                             showProductImages: showProductImages,
+                            showProductNames: showProductNames,
                             onTap: () => onProductClick(product),
                           );
                         },
@@ -196,6 +199,7 @@ class _ProductCard extends StatefulWidget {
   final bool hasDiscount;
   final String Function(double) formatCurrency;
   final bool showProductImages;
+  final bool showProductNames;
   final VoidCallback onTap;
 
   const _ProductCard({
@@ -204,6 +208,7 @@ class _ProductCard extends StatefulWidget {
     required this.hasDiscount,
     required this.formatCurrency,
     required this.showProductImages,
+    required this.showProductNames,
     required this.onTap,
   });
 
@@ -366,17 +371,18 @@ class _ProductCardState extends State<_ProductCard> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      widget.product['name'] ?? '',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: nameFontSize,
-                                        color: AppColors.slate700,
-                                        height: 1.14,
+                                    if (widget.showProductNames)
+                                      Text(
+                                        widget.product['name'] ?? '',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: nameFontSize,
+                                          color: AppColors.slate700,
+                                          height: 1.14,
+                                        ),
+                                        maxLines: hasImage ? 1 : 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      maxLines: hasImage ? 1 : 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
                                     if (widget.product['barcode'] != null &&
                                         widget.product['barcode']
                                             .toString()

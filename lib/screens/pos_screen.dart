@@ -74,6 +74,7 @@ class _PosScreenState extends State<PosScreen>
   String _paymentMethod = 'cash';
   bool _isLoadingAPI = false;
   bool _showProductImages = true;
+  bool _showProductNames = true;
   bool _showBarcodeProducts = true;
 
   List<Map<String, dynamic>> _categories = [];
@@ -107,6 +108,8 @@ class _PosScreenState extends State<PosScreen>
     final prefs = await SharedPreferences.getInstance();
     _showProductImages =
         prefs.getBool('pos_show_product_images_${widget.brandId}') ?? true;
+    _showProductNames =
+        prefs.getBool('pos_show_product_names_${widget.brandId}') ?? true;
     _showBarcodeProducts =
         prefs.getBool('pos_show_barcode_products_${widget.brandId}') ?? true;
 

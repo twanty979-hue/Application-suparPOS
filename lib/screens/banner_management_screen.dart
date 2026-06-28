@@ -1,4 +1,4 @@
-// lib/screens/banner_management_screen.dart
+﻿// lib/screens/banner_management_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -202,8 +202,23 @@ class _BannerManagementScreenState extends State<BannerManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: AppColors.bgLight ?? const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.bgLight ?? const Color(0xFFFAF9F6),
       drawer: const AppSidebar(activeMenu: 'banners'),
+      floatingActionButton: SizedBox(
+        width: 44,
+        height: 44,
+        child: FloatingActionButton(
+          heroTag: 'add_banner',
+          backgroundColor: const Color(0xFF0F172A),
+          foregroundColor: const Color(0xFFFAF9F6),
+          elevation: 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          onPressed: () => _openAddBannerModal(),
+          child: const Icon(Icons.add_rounded, size: 26),
+        ),
+      ),
       body: Builder(
         builder: (context) {
           return SafeArea(
@@ -226,14 +241,6 @@ class _BannerManagementScreenState extends State<BannerManagementScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'แบนเนอร์สไลด์โปรโมชัน',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
                           Text(
                             'เปิดใช้งานอยู่ทั้งหมด ${banners.where((b) => b['is_active'] == true).length} รูป',
                             style: const TextStyle(
@@ -242,37 +249,6 @@ class _BannerManagementScreenState extends State<BannerManagementScreen> {
                             ),
                           ),
                         ],
-                      ),
-                      GestureDetector(
-                        onTap: () => _openAddBannerModal(),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(
-                                Icons.add_photo_alternate_outlined,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'เพิ่มแบนเนอร์',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
                     ],
                   ),
@@ -313,8 +289,6 @@ class _BannerManagementScreenState extends State<BannerManagementScreen> {
                           itemBuilder: (context, index) {
                             final b = banners[index];
                             final String bId = b['id']?.toString() ?? '';
-                            final String bTitle =
-                                b['title']?.toString() ?? 'โปรโมชันหน้าร้าน';
                             final bool isActive = b['is_active'] ?? true;
                             final String? imageUrl = _getBannerImageUrl(
                               b['image_name'],
@@ -322,16 +296,16 @@ class _BannerManagementScreenState extends State<BannerManagementScreen> {
 
                             return BouncingCard(
                               onTap: () => _openAddBannerModal(initialBannerData: b),
-                              glowColor: const Color(0xFF3B82F6),
+                              glowColor: const Color(0xFF0F172A),
                               child: Container(
-                                margin: const EdgeInsets.only(bottom: 12),
+                                margin: const EdgeInsets.only(bottom: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
+                                  color: const Color(0xFFFAF9F6),
+                                  borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: isActive
                                         ? const Color(0xFF0F172A)
-                                        : const Color(0xFFE2E8F0),
+                                        : const Color(0xFFEDE9E3),
                                     width: isActive ? 2 : 1,
                                   ),
                                   boxShadow: [
@@ -353,7 +327,7 @@ class _BannerManagementScreenState extends State<BannerManagementScreen> {
                                             child: ClipRRect(
                                               borderRadius:
                                                   const BorderRadius.vertical(
-                                                    top: Radius.circular(14),
+                                                    top: Radius.circular(10),
                                                   ),
                                               child: imageUrl != null
                                                   ? Image.network(
@@ -363,34 +337,34 @@ class _BannerManagementScreenState extends State<BannerManagementScreen> {
                                                     )
                                                   : Container(
                                                       color: const Color(
-                                                        0xFFF1F5F9,
+                                                        0xFFFAF9F6,
                                                       ),
                                                       child: const Icon(
                                                         Icons.image,
-                                                        size: 48,
+                                                        size: 40,
                                                         color: Color(0xFFCBD5E1),
                                                       ),
                                                     ),
                                             ),
                                           ),
                                           Positioned(
-                                            top: 12,
-                                            right: 12,
+                                            top: 8,
+                                            right: 8,
                                             child: GestureDetector(
                                               onTap: () => _openAddBannerModal(
                                                 initialBannerData: b,
                                               ),
                                               child: Container(
-                                                width: 36,
-                                                height: 36,
+                                                width: 32,
+                                                height: 32,
                                                 decoration: const BoxDecoration(
-                                                  color: Colors.white,
+                                                  color: Color(0xFFFAF9F6),
                                                   shape: BoxShape.circle,
                                                 ),
                                                 child: const Icon(
                                                   Icons.edit_outlined,
                                                   color: Color(0xFF64748B),
-                                                  size: 18,
+                                                  size: 16,
                                                 ),
                                               ),
                                             ),
@@ -399,7 +373,7 @@ class _BannerManagementScreenState extends State<BannerManagementScreen> {
                                       ),
                                     ),
                                     Padding(
-                                      padding: const EdgeInsets.all(14),
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                       child: Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
@@ -409,7 +383,7 @@ class _BannerManagementScreenState extends State<BannerManagementScreen> {
                                               'แสดงผลแบนเนอร์หน้าร้าน',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w900,
-                                                fontSize: 14,
+                                                fontSize: 13,
                                                 color: Color(0xFF1E293B),
                                               ),
                                             ),

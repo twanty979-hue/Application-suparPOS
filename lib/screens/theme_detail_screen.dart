@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 // ลบ SharedPreferences ออกไปเลยครับ เราไม่ใช้แล้ว
 import '../api_service.dart';
@@ -31,6 +33,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
   int? _daysLeftAfterPurchase;
   String? _purchaseTypeAfterPurchase;
   bool _showMobilePreview = true;
+  bool _hasTabletImages = false;
 
   // ตัวแปรสำหรับระบบเลื่อนรูป
   late PageController _pageController;
@@ -66,17 +69,31 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
   }
 
   void _setupImages() {
+    final gallery = widget.theme['gallery_urls'] ?? widget.theme['gallery'];
+    if (gallery != null && gallery['ipad'] != null && (gallery['ipad'] as List).isNotEmpty) {
+      _hasTabletImages = true;
+    } else {
+      _hasTabletImages = false;
+    }
+    _updateDisplayImages();
+  }
+
+  void _updateDisplayImages() {
     _displayImages = [];
-    if (widget.imageUrl.isNotEmpty) {
+    
+    if (_showMobilePreview && widget.imageUrl.isNotEmpty) {
       _displayImages.add(widget.imageUrl);
     }
 
     final gallery = widget.theme['gallery_urls'] ?? widget.theme['gallery'];
-    if (gallery != null && gallery['mobile'] != null) {
-      for (var img in gallery['mobile']) {
-        final imgStr = img.toString();
-        if (!_displayImages.contains(imgStr)) {
-          _displayImages.add(imgStr);
+    if (gallery != null) {
+      final key = _showMobilePreview ? 'mobile' : 'ipad';
+      if (gallery[key] != null) {
+        for (var img in gallery[key]) {
+          final imgStr = img.toString();
+          if (!_displayImages.contains(imgStr)) {
+            _displayImages.add(imgStr);
+          }
         }
       }
     }
@@ -165,7 +182,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
         'id': 'weekly',
         'label': 'รายสัปดาห์',
         'price': _toInt(widget.theme['price_weekly']),
-        'desc': 'เรียกเก็บเงินทุกๆ 7 วัน',
+        'desc': 'ใช้งานได้ 7 วัน',
       });
     }
     if (widget.theme['price_monthly'] != null) {
@@ -173,7 +190,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
         'id': 'monthly',
         'label': 'รายเดือน',
         'price': _toInt(widget.theme['price_monthly']),
-        'desc': 'เรียกเก็บเงินทุกๆ 30 วัน',
+        'desc': 'ใช้งานได้ 30 วัน',
       });
     }
     if (widget.theme['price_yearly'] != null) {
@@ -181,7 +198,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
         'id': 'yearly',
         'label': 'รายปี',
         'price': _toInt(widget.theme['price_yearly']),
-        'desc': 'เรียกเก็บเงินทุกๆ 365 วัน',
+        'desc': 'ใช้งานได้ 365 วัน',
       });
     }
     if (_availablePlans.isNotEmpty) {
@@ -422,23 +439,23 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 430;
     final horizontalPadding = isCompact ? 18.0 : 24.0;
-    final previewHeight = (screenWidth * (isCompact ? 1.34 : 1.04))
-        .clamp(360.0, 500.0)
+    final previewHeight = (screenWidth * (isCompact ? 1.15 : 0.9))
+        .clamp(300.0, 420.0)
         .toDouble();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FB),
+      backgroundColor: const Color(0xFFFAF8F4),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leadingWidth: 128,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 14, top: 8, bottom: 8),
+          padding: const EdgeInsets.only(left: 8, top: 8, bottom: 8),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _goBack,
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: const Color(0xFFEDE9E3),
                 borderRadius: BorderRadius.circular(9),
               ),
               child: const Row(
@@ -446,7 +463,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                 children: [
                   Icon(
                     Icons.arrow_back_rounded,
-                    size: 18,
+                    size: 16,
                     color: Color(0xFF334155),
                   ),
                   SizedBox(width: 7),
@@ -454,7 +471,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                     'ย้อนกลับ',
                     style: TextStyle(
                       color: Color(0xFF334155),
-                      fontSize: 12,
+                      fontSize: 10,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -463,18 +480,16 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
             ),
           ),
         ),
-        title: _buildCoinBalancePill(),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        title: null,
+        centerTitle: false,
+        backgroundColor: const Color(0xFFFAF8F4),
         foregroundColor: const Color(0xFF0B1730),
         elevation: 0,
         actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.share_outlined, color: Color(0xFF94A3B8)),
-            tooltip: 'แชร์',
+          Center(
+            child: _buildCoinBalancePill(),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 14),
         ],
       ),
       body: SafeArea(
@@ -486,20 +501,21 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
+                  const SizedBox(height: 12),
+                  if (_hasTabletImages)
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      child: _buildDeviceToggle(),
                     ),
-                    child: _buildDeviceToggle(),
-                  ),
-                  const SizedBox(height: 22),
+                  if (_hasTabletImages) const SizedBox(height: 12),
                   _buildPreviewCarousel(previewHeight),
                   if (_displayImages.length > 1) ...[
                     const SizedBox(height: 16),
                     _buildPageDots(),
                   ],
-                  SizedBox(height: isCompact ? 26 : 34),
+                  SizedBox(height: isCompact ? 16 : 24),
                   Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: horizontalPadding,
@@ -511,20 +527,20 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                         const SizedBox(height: 24),
                         if (_isOwned) ...[
                           _buildOwnedStatusCard(),
-                          const SizedBox(height: 30),
+                          const SizedBox(height: 16),
                         ],
                         if (!_isOwned && _availablePlans.isNotEmpty) ...[
                           _buildPlanTabs(),
                           const SizedBox(height: 20),
                           _buildPriceCard(),
-                          const SizedBox(height: 34),
+                          const SizedBox(height: 16),
                         ] else if (!_isOwned) ...[
                           _buildUnavailableCard(),
-                          const SizedBox(height: 30),
+                          const SizedBox(height: 16),
                         ],
-                        _buildFeatureListCard(),
-                        const SizedBox(height: 34),
                         _buildPrimaryAction(),
+                        const SizedBox(height: 16),
+                        _buildFeatureListCard(),
                       ],
                     ),
                   ),
@@ -562,7 +578,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                   ),
                 )
               : Text(
-                  '$_currentCoins',
+                  NumberFormat('#,###').format(_currentCoins),
                   style: TextStyle(
                     color: Colors.amber.shade800,
                     fontWeight: FontWeight.w900,
@@ -576,19 +592,11 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
 
   Widget _buildDeviceToggle() {
     return Container(
-      height: 58,
+      height: 38,
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0xFFDDE5EF)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.045),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: const Color(0xFFEDE9E3),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -605,7 +613,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                 width: segmentWidth,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0B1730),
+                    color: const Color(0xFF292524),
                     borderRadius: BorderRadius.circular(13),
                     boxShadow: [
                       BoxShadow(
@@ -625,13 +633,25 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                       label: 'มือถือ',
                       icon: Icons.phone_android_rounded,
                       selected: _showMobilePreview,
-                      onTap: () => setState(() => _showMobilePreview = true),
+                      onTap: () {
+                        setState(() {
+                          _showMobilePreview = true;
+                          _updateDisplayImages();
+                          _currentImageIndex = 0;
+                        });
+                      },
                     ),
                     _buildDeviceToggleItem(
                       label: 'แท็บเล็ต',
                       icon: Icons.tablet_mac_rounded,
                       selected: !_showMobilePreview,
-                      onTap: () => setState(() => _showMobilePreview = false),
+                      onTap: () {
+                        setState(() {
+                          _showMobilePreview = false;
+                          _updateDisplayImages();
+                          _currentImageIndex = 0;
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -658,7 +678,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
           curve: Curves.easeOutCubic,
           style: TextStyle(
             color: selected ? Colors.white : const Color(0xFF64748B),
-            fontSize: 13,
+            fontSize: 11,
             fontWeight: FontWeight.w900,
           ),
           child: Row(
@@ -666,7 +686,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
             children: [
               Icon(
                 icon,
-                size: 17,
+                size: 14,
                 color: selected ? Colors.white : const Color(0xFF64748B),
               ),
               const SizedBox(width: 8),
@@ -718,11 +738,44 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                   vertical: 6,
                 ),
                 child: AspectRatio(
-                  aspectRatio: _showMobilePreview ? 0.48 : 0.66,
-                  child: IphoneMockup(
-                    imageUrl: _displayImages[index],
-                    isCurrent: false,
-                  ),
+                  aspectRatio: _showMobilePreview ? 0.48 : 0.72,
+                  child: _showMobilePreview
+                      ? IphoneMockup(
+                          imageUrl: _displayImages[index],
+                          isCurrent: false,
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E293B),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFF334155),
+                              width: 8,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF0B1730).withValues(alpha: 0.15),
+                                blurRadius: 24,
+                                offset: const Offset(0, 12),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              _displayImages[index],
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Center(
+                                child: Icon(
+                                  Icons.broken_image_rounded,
+                                  color: Color(0xFF94A3B8),
+                                  size: 48,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -822,7 +875,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
           color: Color(0xFF1D4ED8),
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: FontWeight.w900,
         ),
       ),
@@ -876,7 +929,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF047857),
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -890,11 +943,11 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
 
   Widget _buildPlanTabs() {
     return Container(
-      height: 58,
+      height: 38,
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF0F6),
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFFEDE9E3),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -916,16 +969,8 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                 width: segmentWidth,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFD4DCE6)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: const Color(0xFF292524),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
@@ -948,9 +993,9 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                               curve: Curves.easeOutCubic,
                               style: TextStyle(
                                 color: isSelected
-                                    ? const Color(0xFF0B1730)
+                                    ? Colors.white
                                     : const Color(0xFF64748B),
-                                fontSize: 13,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w900,
                               ),
                               child: Text(
@@ -961,8 +1006,8 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                             ),
                             if (planId == 'yearly' && !isSelected)
                               const Positioned(
-                                right: 14,
-                                top: 13,
+                                right: 8,
+                                top: 10,
                                 child: DecoratedBox(
                                   decoration: BoxDecoration(
                                     color: Color(0xFF10B981),
@@ -994,97 +1039,95 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(26, 28, 26, 28),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: const Color(0xFF0B1730), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 28,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: const Color(0xFFFAF9F6),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEDE9E3), width: 1.5),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          SizedBox(
-            height: 26,
-            child: badge.$1.isEmpty
-                ? const SizedBox.shrink()
-                : Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
+          if (badge.$1.isNotEmpty)
+            Positioned(
+              top: 14,
+              right: 14,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: badge.$2,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _selectedPlan == 'yearly'
+                        ? const Color(0xFFA7F3D0)
+                        : const Color(0xFFBFDBFE),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _selectedPlan == 'yearly'
+                          ? Icons.star_rounded
+                          : Icons.local_fire_department_rounded,
+                      size: 11,
+                      color: _selectedPlan == 'yearly'
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFF97316),
                     ),
-                    decoration: BoxDecoration(
-                      color: badge.$2,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: _selectedPlan == 'yearly'
-                            ? const Color(0xFFA7F3D0)
-                            : const Color(0xFFBFDBFE),
+                    const SizedBox(width: 4),
+                    Text(
+                      badge.$1,
+                      style: TextStyle(
+                        color: badge.$3,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _selectedPlan == 'yearly'
-                              ? Icons.star_rounded
-                              : Icons.local_fire_department_rounded,
-                          size: 13,
-                          color: _selectedPlan == 'yearly'
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFFF97316),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          badge.$1,
-                          style: TextStyle(
-                            color: badge.$3,
-                            fontSize: 10,
+                  ],
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          NumberFormat('#,###').format(_currentPrice),
+                          maxLines: 1,
+                          style: const TextStyle(
+                            color: Color(0xFF292524),
+                            fontSize: 32,
                             fontWeight: FontWeight.w900,
+                            height: 0.95,
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-          ),
-          const SizedBox(height: 26),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Flexible(
-                child: Text(
-                  '$_currentPrice',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF0B1730),
-                    fontSize: 50,
-                    fontWeight: FontWeight.w900,
-                    height: 0.95,
-                  ),
+                    const SizedBox(width: 8),
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        'เหรียญ',
+                        style: TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 10),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 6),
-                child: Text(
-                  'เหรียญ',
-                  style: TextStyle(
-                    color: Color(0xFF334155),
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
           Text(
             _currentPlanDesc,
             textAlign: TextAlign.center,
@@ -1092,23 +1135,26 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Color(0xFF64748B),
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 28),
-          Container(
-            width: 64,
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFFDCE8F5),
-              borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 18),
+                Container(
+                  width: 48,
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEDE9E3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _buildPriceBenefitRow('ต่ออายุเพิ่มได้ตลอดเวลา'),
+                const SizedBox(height: 18),
+                _buildPriceBenefitRow('เข้าถึงทุกฟีเจอร์แบบพรีเมียม'),
+              ],
             ),
           ),
-          const SizedBox(height: 28),
-          _buildPriceBenefitRow('ต่ออายุเพิ่มได้ตลอดเวลา'),
-          const SizedBox(height: 18),
-          _buildPriceBenefitRow('เข้าถึงทุกฟีเจอร์แบบพรีเมียม'),
         ],
       ),
     );
@@ -1127,7 +1173,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Color(0xFF0B1730),
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -1151,7 +1197,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
           const Text(
             'สิ่งที่คุณจะได้รับ',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.w900,
               color: Color(0xFF94A3B8),
             ),
@@ -1223,7 +1269,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
               'ธีมนี้ยังไม่มีแพ็กเกจสำหรับสั่งซื้อ',
               style: TextStyle(
                 color: Color(0xFF64748B),
-                fontSize: 13,
+                fontSize: 11,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -1236,21 +1282,20 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
   Widget _buildPrimaryAction() {
     if (_isOwned) {
       return SizedBox(
-        height: 58,
+        height: 42,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0B1730),
+            backgroundColor: const Color(0xFF292524),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(10),
             ),
-            elevation: 8,
-            shadowColor: const Color(0xFF0B1730).withValues(alpha: 0.22),
+            elevation: 0,
           ),
           onPressed: () => Navigator.pop(context),
           child: const Text(
             'ไปที่หน้าจัดการธีม',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
           ),
         ),
       );
@@ -1260,23 +1305,22 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
 
     return SizedBox(
       width: double.infinity,
-      height: 58,
+      height: 42,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF0B1730),
+          backgroundColor: const Color(0xFF292524),
           disabledBackgroundColor: const Color(0xFFCBD5E1),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
           ),
-          elevation: canCheckout ? 8 : 0,
-          shadowColor: const Color(0xFF0B1730).withValues(alpha: 0.24),
+          elevation: 0,
         ),
         onPressed: canCheckout ? _showPurchaseModal : null,
         child: _isLoadingCoins
             ? const SizedBox(
-                width: 24,
-                height: 24,
+                width: 20,
+                height: 20,
                 child: CircularProgressIndicator(
                   color: Colors.white,
                   strokeWidth: 2,
@@ -1289,7 +1333,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                     _availablePlans.isEmpty
                         ? Icons.block_rounded
                         : Icons.shopping_bag_rounded,
-                    size: 20,
+                    size: 16,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -1297,7 +1341,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                         ? 'ไม่มีแพ็กเกจให้ซื้อ'
                         : 'ดำเนินการชำระเงิน',
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -1375,7 +1419,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: const Color(0xFFEDE9E3),
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
@@ -1390,7 +1434,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     color: Color(0xFF64748B),
-                                    fontSize: 12,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
@@ -1447,7 +1491,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                             Icon(
                               Icons.info_outline_rounded,
                               color: Color(0xFFDC2626),
-                              size: 18,
+                              size: 16,
                             ),
                             SizedBox(width: 9),
                             Expanded(
@@ -1455,7 +1499,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                                 'เหรียญของคุณไม่เพียงพอสำหรับแพ็กเกจนี้',
                                 style: TextStyle(
                                   color: Color(0xFF991B1B),
-                                  fontSize: 12,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -1534,7 +1578,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
             label,
             style: const TextStyle(
               color: Color(0xFF64748B),
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1594,7 +1638,7 @@ class _ThemeDetailScreenState extends State<ThemeDetailScreen> {
                           left: 12,
                           child: _buildSuccessSpark(
                             color: const Color(0xFFFDE68A),
-                            size: 18,
+                            size: 16,
                           ),
                         ),
                         Positioned(
