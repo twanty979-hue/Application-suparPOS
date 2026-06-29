@@ -79,6 +79,40 @@ extension PosCartExtension on _PosScreenState {
     };
   }
 
+  Future<void> _handleTabChange(String tab) async {
+    if (tab == 'pos' && _selectedOrder != null) {
+      final bool? shouldKeepTable = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text('เพิ่มสินค้า', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: Text('คุณต้องการเพิ่มสินค้าลงในโต๊ะ ${_selectedOrder!['table_label']} ใช่หรือไม่?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('ไม่ (สลับไปตะกร้าหน้าร้าน)', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.emerald500),
+              child: const Text('ใช่, เพิ่มสินค้า', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldKeepTable == null) return; // User cancelled dialog
+      if (shouldKeepTable == false) {
+        setState(() {
+          _selectedOrder = null;
+          _activeTab = tab;
+        });
+        return;
+      }
+    }
+    setState(() => _activeTab = tab);
+  }
+
   Future<void> _handleProductClick(Map<String, dynamic> product) async {
     if (product['price_special'] != null || product['price_jumbo'] != null) {
       final selectedVariant = await VariantModal.show(
@@ -93,9 +127,48 @@ extension PosCartExtension on _PosScreenState {
   }
 
   Future<void> _addToCart(Map<String, dynamic> product, String variant) async {
-    final draftOrderId = await _ensureWalkInDraftOrder();
     final pricing = _calculatePrice(product, variant);
     final nowIso = DateTime.now().toUtc().toIso8601String();
+
+    if (_selectedOrder != null) {
+      setState(() {
+        final items = List<dynamic>.from(_selectedOrder!['order_items'] as List? ?? []);
+        int existingIndex = items.indexWhere((item) => 
+          item is Map && 
+          item['product_id'] == product['id'] && 
+          item['variant'] == variant && 
+          item['status'] != 'cancelled' &&
+          item['is_local'] == true
+        );
+        if (existingIndex > -1) {
+           final qty = double.tryParse(items[existingIndex]['quantity']?.toString() ?? '1') ?? 1;
+           items[existingIndex]['quantity'] = qty + 1;
+        } else {
+           items.add({
+             'id': const Uuid().v4(),
+             'order_id': _selectedOrder!['id'],
+             'product_id': product['id'],
+             'product_name': product['name'],
+             'variant': variant,
+             'price': pricing['final'],
+             'original_price': pricing['original'],
+             'discount': pricing['discount'],
+             'promotion_snapshot': pricing['promotion_snapshot'],
+             'quantity': 1,
+             'status': 'active',
+             'created_at': nowIso,
+             'is_local': true,
+             'image_url': product['image_url'] ?? product['image_name'],
+             'local_image_path': product['local_image_path'],
+           });
+        }
+        _selectedOrder!['order_items'] = items;
+      });
+      _triggerCartBounce();
+      return;
+    }
+
+    final draftOrderId = await _ensureWalkInDraftOrder();
     String? orderItemId;
     var nextQty = 1;
 
@@ -519,6 +592,7 @@ extension PosCartExtension on _PosScreenState {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
         title: const Text(
           'ยืนยันยกเลิกรายการ',
           style: TextStyle(fontWeight: FontWeight.bold),
@@ -592,7 +666,7 @@ extension PosCartExtension on _PosScreenState {
   }
 
   Future<void> _handleCartItemRemove(int index) async {
-    if (_activeTab == 'tables') {
+    if (_selectedOrder != null) {
       await _onCancelTableOrderItemClick(index);
       return;
     }
@@ -838,10 +912,8 @@ extension PosCartExtension on _PosScreenState {
   }
 
   double get _rawTotal {
-    if (_activeTab == 'tables') {
-      if (_selectedOrder != null) return _orderTotal(_selectedOrder!);
-      return 0.0; // ยังไม่เลือกโต๊ะ → ไม่นำตะกร้า POS มาแสดง
-    }
+    if (_selectedOrder != null) return _orderTotal(_selectedOrder!);
+    if (_activeTab == 'tables') return 0.0; // ยังไม่เลือกโต๊ะ → ไม่นำตะกร้า POS มาแสดง
     return _cart.fold(
       0.0,
       (sum, item) => sum + ((item['price'] as num) * (item['qty'] as num)),
@@ -852,15 +924,21 @@ extension PosCartExtension on _PosScreenState {
       _paymentMethod == 'cash' ? ((_rawTotal * 4).ceil() / 4) : _rawTotal;
 
   int get _totalItems {
-    if (_activeTab == 'tables') {
-      if (_selectedOrder == null) return 0; // ยังไม่เลือกโต๊ะ → ไม่นำตะกร้า POS มาแสดง
+    if (_selectedOrder != null) {
       final items = _selectedOrder!['order_items'] as List? ?? const [];
-      return items.where((item) {
-        if (item is! Map) return false;
-        return !_isCancelledItem(Map<String, dynamic>.from(item));
-      }).length;
+      return items.fold(0, (sum, item) {
+        if (item is! Map) return sum;
+        if (_isCancelledItem(Map<String, dynamic>.from(item))) return sum;
+        final qty = (double.tryParse(item['quantity']?.toString() ?? item['qty']?.toString() ?? '1') ?? 1.0).toInt();
+        return sum + qty;
+      });
     }
-    return _cart.fold(0, (sum, item) => sum + (item['qty'] as int));
+
+    if (_activeTab == 'tables') return 0; // ยังไม่เลือกโต๊ะ → ไม่นำตะกร้า POS มาแสดง
+    return _cart.fold(0, (sum, item) {
+      final qty = (item['qty'] as num?)?.toInt() ?? 1;
+      return sum + qty;
+    });
   }
 
   String _formatCurrency(double amount) {

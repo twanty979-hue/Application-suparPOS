@@ -214,10 +214,10 @@ class CartPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 768;
-    bool isTableActive = activeTab == 'tables' && selectedOrder != null;
+    bool isTableActive = selectedOrder != null;
     List itemsToRender = isTableActive
         ? (selectedOrder!['order_items'] as List)
-        : cart;
+        : (activeTab == 'tables' ? [] : cart);
 
     return Container(
       decoration: BoxDecoration(
@@ -282,46 +282,48 @@ class CartPanel extends StatelessWidget {
                         color: AppColors.slate800,
                       ),
                     ),
-                  ],
-                ),
-                if (isTableActive && onCancelOrder != null)
-                  Material(
-                    color: AppColors.rose50,
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: onCancelOrder,
-                      child: const SizedBox(
-                        width: 30,
-                        height: 30,
-                        child: Icon(
-                          Icons.delete_outline_rounded,
-                          color: AppColors.rose500,
-                          size: 16,
+                    if (isTableActive) const SizedBox(width: 12),
+                    if (isTableActive)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.orange100,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          "โต๊ะ ${selectedOrder!['table_label']}",
+                          style: const TextStyle(
+                            color: AppColors.orange600,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                            letterSpacing: 1,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                if (isTableActive)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.orange100,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Text(
-                      "โต๊ะ ${selectedOrder!['table_label']}",
-                      style: const TextStyle(
-                        color: AppColors.orange600,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                        letterSpacing: 1,
+                    if (isTableActive && onCancelOrder != null) const SizedBox(width: 6),
+                    if (isTableActive && onCancelOrder != null)
+                      Material(
+                        color: AppColors.rose50,
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: onCancelOrder,
+                          child: const SizedBox(
+                            width: 30,
+                            height: 30,
+                            child: Icon(
+                              Icons.delete_outline_rounded,
+                              color: AppColors.rose500,
+                              size: 16,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -363,7 +365,7 @@ class CartPanel extends StatelessWidget {
                       itemCount: itemsToRender.length,
                       itemBuilder: (context, index) {
                         final item = itemsToRender[index];
-                        final isTableItem = activeTab == 'tables';
+                        final isTableItem = isTableActive;
                         final isCancelled =
                             isTableItem &&
                             item['status']?.toString().toLowerCase() ==
@@ -372,7 +374,7 @@ class CartPanel extends StatelessWidget {
                             double.tryParse(item['price']?.toString() ?? '0') ??
                             0.0;
                         final double qty =
-                            double.tryParse(item['qty']?.toString() ?? '1') ??
+                            double.tryParse(item['quantity']?.toString() ?? item['qty']?.toString() ?? '1') ??
                             1.0;
 
                         String itemName =
@@ -424,6 +426,8 @@ class CartPanel extends StatelessWidget {
                                     children: [
                                       Text(
                                         itemName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,

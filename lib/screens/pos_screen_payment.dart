@@ -105,10 +105,10 @@ extension PosPaymentExtension on _PosScreenState {
       if (changeAmount < 0) changeAmount = 0.0;
       print("💵 [CHECKOUT] 2. คำนวณเงินทอน: $changeAmount");
 
-      final sourceOrderIds = _activeTab == 'tables'
+      final sourceOrderIds = selectedOrder != null
           ? _sourceOrderIdsFor(selectedOrder)
           : <String>[];
-      final selectedTableId = _activeTab == 'tables' && selectedOrder != null
+      final selectedTableId = selectedOrder != null
           ? selectedOrder['table_id']
           : null;
       final selectedOrderId = selectedOrder == null
@@ -124,21 +124,21 @@ extension PosPaymentExtension on _PosScreenState {
 
       final tableOrderFallbackId = const Uuid().v4();
 
-      String finalOrderId = _activeTab == 'pos'
+      String finalOrderId = selectedOrder == null
           ? await _ensureWalkInDraftOrder()
           : (sourceOrderIds.isNotEmpty
                 ? sourceOrderIds.first
                 : (selectedOrderId ?? tableOrderFallbackId));
 
-      String tableLabel = _activeTab == 'tables'
+      String tableLabel = selectedOrder != null
           ? (selectedTableLabel ?? '?')
           : 'Walk-in';
-      String orderType = _activeTab == 'tables' ? 'table' : 'pos';
+      String orderType = selectedOrder != null ? 'table' : 'pos';
 
-      final usedTableTokens = _activeTab == 'tables'
+      final usedTableTokens = selectedOrder != null
           ? _usedTableTokensForOrder(selectedOrder)
           : <String>[];
-      final nextTableTokens = _activeTab == 'tables'
+      final nextTableTokens = selectedOrder != null
           ? _nextTableTokensAfterPayment(selectedOrder)
           : <String>[];
       print(
@@ -152,7 +152,7 @@ extension PosPaymentExtension on _PosScreenState {
 
       List<Map<String, dynamic>> itemsToSave = [];
 
-      if (_activeTab == 'pos') {
+      if (selectedOrder == null) {
         final activeItemsToSave = _cart
             .map(
               (i) => <String, dynamic>{
@@ -199,10 +199,25 @@ extension PosPaymentExtension on _PosScreenState {
           selectedOrderItems ?? [],
         );
         itemsToSave = rawItems.where((i) => !_isCancelledItem(i)).map((i) {
-          var mapped = Map<String, dynamic>.from(i);
-          mapped['order_id'] = finalOrderId;
-          mapped.remove('updated_at');
-          return mapped;
+          final isCancelled = i['status']?.toString().toLowerCase() == 'cancelled';
+          return <String, dynamic>{
+            'id': i['id'] ?? const Uuid().v4(),
+            'order_id': finalOrderId,
+            'product_id': i['product_id'] ?? i['id'],
+            'product_name': i['product_name'] ?? i['name'] ?? 'Unknown',
+            'quantity': i['quantity'] ?? i['qty'] ?? 1,
+            'price': i['price'] ?? 0.0,
+            'original_price': i['original_price'],
+            'discount': i['discount'],
+            'variant': i['variant'],
+            'note': i['note'],
+            'promotion_snapshot': i['promotion_snapshot'],
+            'status': i['status'] ?? 'active',
+            'cancelled_by': isCancelled ? (i['cancelled_by'] ?? _currentUserUuidOrNull()) : null,
+            'cancelled_at': isCancelled ? (i['cancelled_at'] ?? nowIso) : null,
+            'cancel_reason': isCancelled ? (i['cancel_reason'] ?? '') : null,
+            'created_at': i['created_at'] ?? nowIso,
+          };
         }).toList();
       }
       final receiptItems = itemsToSave
@@ -221,7 +236,7 @@ extension PosPaymentExtension on _PosScreenState {
           'id': finalOrderId,
           'brand_id': widget.brandId,
           'table_label': tableLabel,
-          if (_activeTab == 'tables') ...{
+          if (selectedOrder != null) ...{
             'table_id': selectedTableId,
             'table_access_token': usedTableTokens.isNotEmpty
                 ? usedTableTokens.first
@@ -248,12 +263,12 @@ extension PosPaymentExtension on _PosScreenState {
           'created_at': nowIso,
         },
         syncPayload: {
-          'cartItems': _activeTab == 'pos' ? _cart : selectedOrderItems,
-          'cancelledCartItems': _activeTab == 'pos'
+          'cartItems': selectedOrder == null ? _cart : selectedOrderItems,
+          'cancelledCartItems': selectedOrder == null
               ? _cancelledCartItems
               : const <Map<String, dynamic>>[],
           'brandId': widget.brandId,
-          'type': _activeTab,
+          'type': selectedOrder != null ? 'tables' : 'pos',
           'used_tokens': usedTableTokens,
           'next_tokens': nextTableTokens,
           'table_label': tableLabel,
@@ -299,7 +314,7 @@ extension PosPaymentExtension on _PosScreenState {
           },
           () {
             setState(() {
-              if (_activeTab == 'pos') {
+              if (selectedOrder == null) {
                 _cart.clear();
                 _cancelledCartItems.clear();
                 _walkInDraftOrderId = null;
@@ -328,7 +343,7 @@ extension PosPaymentExtension on _PosScreenState {
         );
       }
 
-      if (_activeTab == 'tables' && widget.brandId.isNotEmpty) {
+      if (selectedOrder != null && widget.brandId.isNotEmpty) {
         print("☁️ [BACKGROUND] 7. เริ่มยิง API ล้างโต๊ะขึ้น Cloud...");
 
         final checkoutOrderIds = sourceOrderIds.isNotEmpty
@@ -354,7 +369,7 @@ extension PosPaymentExtension on _PosScreenState {
                 body: jsonEncode({
                   'order_id': checkoutOrderId,
                   'order_ids': checkoutOrderIds,
-                  'payment_id': localPayId,
+                  // 'payment_id': localPayId, // เอาออกชั่วคราวเพื่อป้องกัน Error Foreign Key บน Server เพราะ Payment เพิ่งสร้างใน Local ยังไม่ Sync
                   'table_id': selectedTableId,
                   'table_label': tableLabel,
                   'used_tokens': usedTableTokens,
@@ -434,12 +449,12 @@ extension PosPaymentExtension on _PosScreenState {
 
     if (_paymentMethod == 'promptpay') {
       String promptPayNum = _brandSettings['promptpay_number'] ?? '';
-      final promptPayItems = _activeTab == 'pos'
+      final promptPayItems = _selectedOrder == null
           ? List<dynamic>.from(_cart)
           : List<dynamic>.from(
               (_selectedOrder?['order_items'] as List?) ?? const [],
             );
-      final promptPayTableLabel = _activeTab == 'tables'
+      final promptPayTableLabel = _selectedOrder != null
           ? (_selectedOrder?['table_label']?.toString() ?? '?')
           : 'Walk-in';
       final promptPayReceiptData = {
@@ -493,40 +508,43 @@ extension PosPaymentExtension on _PosScreenState {
     }
   }
 
-  Future<void> _onCancelOrderClick() async {
-    final bool isWalkIn = (_activeTab == 'pos');
+  Future<void> _onCancelOrderClick({bool skipConfirm = false}) async {
+    final bool isWalkIn = (_selectedOrder == null);
 
     if (isWalkIn && _cart.isEmpty) return;
     if (!isWalkIn && _selectedOrder == null) return;
 
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-          'ยืนยันยกเลิกออเดอร์',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: const Text(
-          'คุณต้องการยกเลิกออเดอร์นี้ใช่หรือไม่?\nการยกเลิกจะถูกบันทึกในระบบ',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('ไม่', style: TextStyle(color: Colors.grey)),
+    if (!skipConfirm) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text(
+            'ยืนยันยกเลิกออเดอร์',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.rose500),
-            child: const Text(
-              'ใช่, ยกเลิกออเดอร์',
-              style: TextStyle(color: Colors.white),
+          content: const Text(
+            'คุณต้องการยกเลิกออเดอร์นี้ใช่หรือไม่?\nการยกเลิกจะถูกบันทึกในระบบ',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('ไม่', style: TextStyle(color: Colors.grey)),
             ),
-          ),
-        ],
-      ),
-    );
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.rose500),
+              child: const Text(
+                'ใช่, ยกเลิกออเดอร์',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      );
 
-    if (confirm != true) return;
+      if (confirm != true) return;
+    }
 
     String userId = 'unknown';
     if (_accessToken != null && _accessToken!.isNotEmpty) {

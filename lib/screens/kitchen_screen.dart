@@ -125,6 +125,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
         title: const Text(
           'ยกเลิกออเดอร์',
           style: TextStyle(fontFamily: 'Kanit'),

@@ -36,6 +36,8 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   static const _deepLinks = MethodChannel('suparpos/deep_links');
+  static const _googleWebClientId =
+      '190663563847-aujr9jhn101fvae00qh87s8dtt697hks.apps.googleusercontent.com';
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
@@ -63,7 +65,9 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    _googleInitialization = _googleSignIn.initialize();
+    _googleInitialization = _googleSignIn.initialize(
+      serverClientId: _googleWebClientId,
+    );
     _deepLinks.setMethodCallHandler((call) async {
       if (call.method == 'onLink') {
         _handleDeepLink(call.arguments?.toString());
@@ -75,7 +79,7 @@ class _LoginPageState extends State<LoginPage> {
   void _handleDeepLink(String? rawLink) {
     final uri = rawLink == null ? null : Uri.tryParse(rawLink);
     if (uri == null ||
-        uri.scheme != 'com.suparpos.app' ||
+        uri.scheme != 'com.suparpos.mobile' ||
         uri.host != 'login-callback') {
       return;
     }

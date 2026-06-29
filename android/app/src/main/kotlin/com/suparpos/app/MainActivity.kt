@@ -1,4 +1,4 @@
-package com.suparpos.app
+package com.suparpos.mobile
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

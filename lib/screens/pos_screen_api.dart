@@ -379,7 +379,46 @@ extension PosApiExtension on _PosScreenState {
             return status == 'pending' ||
                 status == 'preparing' ||
                 status == 'done';
+          }).map((order) {
+            if (order['order_items'] != null) {
+              for (var item in order['order_items']) {
+                if (item is Map) {
+                  final productId = item['product_id']?.toString();
+                  if (productId != null) {
+                    final product = _products.firstWhere(
+                      (p) => p['id']?.toString() == productId,
+                      orElse: () => <String, dynamic>{},
+                    );
+                    if (product.isNotEmpty) {
+                      item['image_url'] ??= product['image_url'] ?? product['image_name'];
+                      item['local_image_path'] ??= product['local_image_path'];
+                    }
+                  }
+                }
+              }
+            }
+            return order;
           }).toList();
+
+          if (_selectedOrder != null) {
+            final currentId = _selectedOrder!['id'];
+            final updatedOrder = _unpaidOrders.cast<Map<String, dynamic>?>().firstWhere(
+              (o) => o!['id'] == currentId,
+              orElse: () => null,
+            );
+            if (updatedOrder != null) {
+              // Check if order items changed
+              final oldItems = _selectedOrder!['order_items'] as List? ?? [];
+              final newItems = updatedOrder['order_items'] as List? ?? [];
+              bool itemsChanged = oldItems.length != newItems.length;
+              _selectedOrder = Map<String, dynamic>.from(updatedOrder);
+              if (itemsChanged) {
+                _triggerCartBounce();
+              }
+            } else {
+              _selectedOrder = null;
+            }
+          }
 
           _isLoadingAPI = false;
         });

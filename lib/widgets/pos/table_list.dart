@@ -6,7 +6,7 @@ import '../../theme/app_colors.dart';
 class TableList extends StatelessWidget {
   final List<dynamic> unpaidOrders;
   final Map<String, dynamic>? selectedOrder;
-  final Function(Map<String, dynamic>) onSelectOrder;
+  final Function(Map<String, dynamic>?) onSelectOrder;
   final String Function(double) formatCurrency;
 
   const TableList({
@@ -94,7 +94,13 @@ class TableList extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(isDesktop ? 24 : 12),
-              onTap: () => onSelectOrder(order),
+              onTap: () {
+                if (isSelected) {
+                  onSelectOrder(null);
+                } else {
+                  onSelectOrder(order);
+                }
+              },
               child: Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: isDesktop ? 20 : 12,
@@ -122,15 +128,12 @@ class TableList extends StatelessWidget {
                         ],
                       ),
                       child: Center(
-                        child: Text(
-                          shortLabel,
-                          style: TextStyle(
-                            fontSize: isDesktop ? 20 : 16,
-                            fontWeight: FontWeight.w900,
-                            color: isSelected
-                                ? Colors.white
-                                : AppColors.slate600,
-                          ),
+                        child: Icon(
+                          Icons.table_restaurant_rounded,
+                          size: isDesktop ? 30 : 24,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.slate600,
                         ),
                       ),
                     ),

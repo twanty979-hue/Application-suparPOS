@@ -35,6 +35,7 @@ import '../widgets/app_sidebar.dart';
 import '../widgets/suparpos_loading.dart';
 import '../db/payment_repository.dart';
 import '../db/database_helper.dart';
+import '../db/sync_manager.dart';
 import 'receipt_settings_screen.dart';
 part 'pos_screen_fcm.dart';
 part 'pos_screen_api.dart';
@@ -95,6 +96,7 @@ class _PosScreenState extends State<PosScreen>
   final TextEditingController _barcodeController = TextEditingController();
   OverlayEntry? _topNotificationEntry;
   Timer? _topNotificationTimer;
+  Timer? _autoSyncTimer;
 
   String? _accessToken;
 
@@ -102,6 +104,9 @@ class _PosScreenState extends State<PosScreen>
   void initState() {
     super.initState();
     _loadSessionAndInit();
+    _autoSyncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      SyncManager().runSyncWorker();
+    });
   }
 
   Future<void> _loadSessionAndInit() async {
@@ -129,6 +134,7 @@ class _PosScreenState extends State<PosScreen>
   void dispose() {
     _hideTopNotification();
     _barcodeController.dispose();
+    _autoSyncTimer?.cancel();
     super.dispose();
   }
 

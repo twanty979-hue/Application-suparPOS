@@ -59,7 +59,7 @@ extension PosUiExtension on _PosScreenState {
                             vertical: 13,
                           ),
                           decoration: BoxDecoration(
-                            color: color,
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
@@ -75,12 +75,12 @@ extension PosUiExtension on _PosScreenState {
                                 width: 34,
                                 height: 34,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.18),
+                                  color: color.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
                                   icon,
-                                  color: Colors.white,
+                                  color: color,
                                   size: 20,
                                 ),
                               ),
@@ -95,7 +95,7 @@ extension PosUiExtension on _PosScreenState {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
-                                        color: Colors.white,
+                                        color: AppColors.slate900,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w900,
                                       ),
@@ -105,8 +105,8 @@ extension PosUiExtension on _PosScreenState {
                                       message,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.92),
+                                      style: const TextStyle(
+                                        color: AppColors.slate600,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w700,
                                         height: 1.2,
@@ -178,6 +178,11 @@ extension PosUiExtension on _PosScreenState {
                           await _handleCartItemRemove(index);
                           setState(() {});
                           setModalState(() {});
+                          if (_selectedOrder != null && _totalItems == 0) {
+                            await _onCancelOrderClick(skipConfirm: true);
+                            setState(() {});
+                            setModalState(() {});
+                          }
                         },
                         onCancelOrder: _activeTab == 'tables'
                             ? () async {
@@ -255,7 +260,14 @@ extension PosUiExtension on _PosScreenState {
                 payableAmount: _payableAmount,
                 showProductImages: _showProductImages,
                 formatCurrency: _formatCurrency,
-                onRemoveFromCart: _handleCartItemRemove,
+                onRemoveFromCart: (index) async {
+                  await _handleCartItemRemove(index);
+                  setState(() {});
+                  if (_selectedOrder != null && _totalItems == 0) {
+                    await _onCancelOrderClick(skipConfirm: true);
+                    setState(() {});
+                  }
+                },
                 onCancelOrder: _activeTab == 'tables'
                     ? _onCancelOrderClick
                     : null,
@@ -312,7 +324,7 @@ extension PosUiExtension on _PosScreenState {
           onMenuPressed: () {
             _scaffoldKey.currentState?.openDrawer();
           },
-          onTabChanged: (tab) => setState(() => _activeTab = tab),
+          onTabChanged: _handleTabChange,
           quotaLabel: _orderLimit == -1
               ? (_currentPlan == 'ultimate'
                     ? 'ULTIMATE 👑'

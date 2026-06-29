@@ -10,15 +10,14 @@ if (keystorePropertiesFile.exists()) {
 
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
-    id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
+    // Firebase/FCM configuration is temporarily paused while the new
+    // com.suparpos.mobile app is registered in the existing Firebase project.
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    namespace = "com.suparpos.app"
+    namespace = "com.suparpos.mobile"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -43,7 +42,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.suparpos.app"
+        applicationId = "com.suparpos.mobile"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
